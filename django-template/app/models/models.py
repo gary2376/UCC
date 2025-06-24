@@ -81,7 +81,6 @@ class SystemFeature(models.Model):
 
 
 # ERP 系統相關模型
-
 class GreenBeanInboundRecord(models.Model):
     """生豆入庫記錄"""
     class Meta:
