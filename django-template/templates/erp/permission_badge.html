@@ -1,0 +1,9 @@
+{% if has_permission %}
+    <span class="badge bg-success">
+        <i class="fas fa-check"></i> 有權限
+    </span>
+{% else %}
+    <span class="badge bg-secondary">
+        <i class="fas fa-times"></i> 無權限
+    </span>
+{% endif %}

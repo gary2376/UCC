@@ -1,0 +1,40 @@
+{% extends 'admin/login.html' %}
+{% load i18n static simpletags %}
+{% block head %}
+    {{ block.super }}
+    {# You can add code here. #}
+    <link rel="stylesheet" href="{% static 'admin/fontawesome/css/all.min.css' %}">
+    <style>
+      .header {
+        color: #333333 !important;
+        font-weight: 500 !important;
+      }
+    </style>
+{% endblock %}
+{% block form %}
+    <form class="simpleui-form" action="{{ app_path }}" method="post" id="login-form">
+        {% csrf_token %}
+        <div class="simpleui-input-inline">
+            <el-input prefix-icon="fas fa-user" v-model="username" name="username"
+                      placeholder="{% trans 'username' %}" autofocus></el-input>
+        </div>
+        <div class="simpleui-input-inline">
+            <el-input prefix-icon="fas fa-lock" type="password" v-model="password" name="password"
+                      @keyup.enter.native="login()"
+                      placeholder="{% trans 'password' %}" show-password></el-input>
+        </div>
+         <div class="simpleui-input-inline login-btn">
+            <el-button :icon="loading?'el-icon-loading':''" @click="login()"
+                       type="primary">{% trans 'Log in' %}</el-button>
+        </div>
+        {% url 'admin_password_reset' as password_reset_url %}
+          {% if password_reset_url %}
+
+         <div class="password-reset-link" style="text-align: center">
+            <a class="forgot-password" href="{{ password_reset_url }}" style="color: rgb(51 51 51 / 50%)">{% trans 'Forgotten your password or username?' %}</a>
+          </div>
+          {% endif %}
+
+        <input type="hidden" name="next" value="{{ next }}"/>
+    </form>
+{% endblock %}

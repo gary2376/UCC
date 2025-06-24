@@ -1,0 +1,61 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}權限測試{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">權限系統測試</h3>
+                </div>
+                <div class="card-body">
+                    <h4>用戶資訊</h4>
+                    <ul class="list-group mb-3">
+                        <li class="list-group-item">用戶名: {{ user_info.username }}</li>
+                        <li class="list-group-item">超級管理員: {{ user_info.is_superuser|yesno:"是,否" }}</li>
+                        <li class="list-group-item">角色: {{ user_info.role }}</li>
+                        <li class="list-group-item">群組: {{ user_info.groups|join:", " }}</li>
+                    </ul>
+                    
+                    <h4>權限測試結果</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>權限項目</th>
+                                    <th>檢查結果</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for permission, result in permissions_test.items %}
+                                <tr>
+                                    <td>{{ permission }}</td>
+                                    <td>
+                                        {% if result %}
+                                            <span class="badge badge-success">✅ 有權限</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">❌ 無權限</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h4>功能連結測試</h4>
+                    <div class="btn-group-vertical" role="group">
+                        <a href="/erp/clean/" class="btn btn-primary">ERP 儀表板</a>
+                        <a href="/erp/upload/history/" class="btn btn-info">上傳記錄</a>
+                        <a href="/erp/upload/" class="btn btn-warning">檔案上傳</a>
+                        <a href="/admin/app/greenbeaninboundrecord/" class="btn btn-secondary">生豆入庫記錄</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

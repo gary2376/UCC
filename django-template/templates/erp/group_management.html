@@ -1,0 +1,170 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}群組管理{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h1 class="mb-4">
+        <i class="fas fa-users-cog"></i> 群組管理
+        <small class="text-muted">僅限系統管理員</small>
+    </h1>
+
+    <!-- 統計資訊 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_groups }}</h4>
+                            <span>總群組數</span>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ total_users }}</h4>
+                            <span>總用戶數</span>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-user fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 群組詳細資訊 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-list"></i> 群組詳細資訊</h5>
+                </div>
+                <div class="card-body">
+                    {% if groups_info %}
+                        <div class="accordion" id="groupAccordion">
+                            {% for group in groups_info %}
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">
+                                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapse{{ forloop.counter }}">
+                                                <i class="fas fa-users"></i> {{ group.name }}
+                                                <span class="badge badge-secondary ml-2">{{ group.users_count }} 用戶</span>
+                                                <span class="badge badge-info ml-1">{{ group.permissions_count }} 權限</span>
+                                            </button>
+                                        </h6>
+                                    </div>
+                                    <div id="collapse{{ forloop.counter }}" class="collapse" data-parent="#groupAccordion">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <!-- 群組成員 -->
+                                                <div class="col-md-6">
+                                                    <h6><i class="fas fa-user-friends"></i> 群組成員 ({{ group.users_count }})</h6>
+                                                    {% if group.users %}
+                                                        <ul class="list-group list-group-flush">
+                                                            {% for user in group.users %}
+                                                                <li class="list-group-item py-1">
+                                                                    <i class="fas fa-user text-primary"></i> {{ user }}
+                                                                </li>
+                                                            {% endfor %}
+                                                        </ul>
+                                                    {% else %}
+                                                        <p class="text-muted">沒有成員</p>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <!-- 群組權限 -->
+                                                <div class="col-md-6">
+                                                    <h6><i class="fas fa-key"></i> 群組權限 ({{ group.permissions_count }})</h6>
+                                                    {% if group.permissions %}
+                                                        <div class="row">
+                                                            {% for permission in group.permissions %}
+                                                                <div class="col-12 mb-1">
+                                                                    <span class="badge badge-info">{{ permission }}</span>
+                                                                </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        <p class="text-muted">沒有權限</p>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 管理按鈕 -->
+                                            <hr>
+                                            <div class="text-right">
+                                                <a href="/admin/auth/group/{{ group.name|slice:':10' }}/change/" class="btn btn-sm btn-primary">
+                                                    <i class="fas fa-edit"></i> 編輯群組
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> 目前沒有任何群組
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理工具 -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tools"></i> 管理工具</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <a href="/admin/auth/group/add/" class="btn btn-success">
+                            <i class="fas fa-plus"></i> 新增群組
+                        </a>
+                        <a href="/admin/auth/group/" class="btn btn-primary">
+                            <i class="fas fa-list"></i> 管理群組
+                        </a>
+                        <a href="/admin/app/user/" class="btn btn-info">
+                            <i class="fas fa-user-edit"></i> 管理用戶
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 返回按鈕 -->
+    <div class="mt-4">
+        <a href="{% url 'admin:index' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> 返回管理頁面
+        </a>
+    </div>
+</div>
+
+<style>
+.card {
+    margin-bottom: 1rem;
+}
+.badge {
+    margin-right: 0.5rem;
+}
+.list-group-item {
+    border: none;
+    padding-left: 0;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block nav-global %}
+<div style="background: #417690; padding: 10px; margin-bottom: 10px;">
+  <a href="/erp/" style="color: white; text-decoration: none; margin-right: 20px;">
+    <i class="fas fa-chart-line"></i> ERP 系統
+  </a>
+  <a href="/erp/permissions/" style="color: white; text-decoration: none;">
+    <i class="fas fa-shield-alt"></i> 權限管理
+  </a>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style>
+    #result_list div.drag {
+      background: url({% static 'icons/sort-solid.svg' %}) no-repeat center center;
+      cursor: pointer;
+    }
+
+    {# FileBrowser #}
+    .tox-dialog {
+      max-height: 100% !important;
+    }
+
+    .tox-dialog .tox-dialog__title {
+      visibility: hidden;
+    }
+
+    .tox-tinymce {
+      max-height: 100vh !important;
+    }
+
+    .object-tools a:link, .object-tools a:visited {
+        color: var(--object-tools-fg) !important;
+    }
+
+    .submit-row a.deletelink, a.button {
+        color: var(--button-fg) !important;
+    }
+
+    div.breadcrumbs a {
+        color: var(--breadcrumbs-link-fg);
+    }
+
+    {# CropperImage #}
+    .cropperImageField {
+      width: auto !important;
+      border: None !important;
+    }
+
+    .cropperImageField .placeholder:hover {
+      background-color: #e6e6e6 !important;
+      border-color: #b3b3b3 !important;
+    }
+
+    .preview_container::before {
+      content: "預覽：" !important;
+    }
+  </style>
+{% endblock %}
+
+{% block footer %}
+  <style>
+    .module h2, .module caption, .inline-group h2, .selector-chosen h2 {
+      background: rgba(255, 255, 255) !important;
+      color: var(--body-fg) !important;
+    }
+  </style>
+  <div id="footer" style="color: rgb(167 167 167); font-weight: 300; font-size: 12px !important; margin-top: auto">
+    &copy; Copyright {% now "Y" %}
+    <a href="https://wealert.com.tw" target="_blank" rel="noopener noreferrer"
+       style="color: rgb(167 167 167) !important; font-weight: 400; font-size: 12px !important;">
+      Wealert Co., Ltd.</a> All rights reserved.
+  </div>
+  <script>
+    if (typeof (django) !== 'undefined' && typeof (django.jQuery) !== 'undefined') {
+      (function ($) {
+        {# 隱藏清單頁面一開始不應出現的「全部 XXX 個被選」、「選擇全部 XXX 」、「清除選擇」 #}
+        if (typeof (_action) !== 'undefined' && $('.action-counter').length > 0) {
+          $('span.all,span.question,span.clear').addClass('hidden')
+        }
+      })(django.jQuery)
+    }
+    _cropper_messages = {
+      'Crop for': '裁切：',
+      'Redefine': '重設',
+      'Rotate (clockwise)': '逆時針旋轉',
+      'Rotate (counterclockwise)': '順時針旋轉',
+      'Limit dimensions': '限制尺寸',
+      'Automatically limits the image\'s dimensions': '自動限制圖片尺寸',
+      'Cancel': '取消',
+      'Save image': '儲存圖片',
+      'Preview': '預覽',
+      'File above the size limit': '檔案容量超過限制',
+      'Invalid image file': '無效的圖片檔案',
+      'Selected image ({source_image_size}) is smaller than the recommended size ({fixed_image_size}). Loss of quality may occur.':
+        '已選擇的圖片（{source_image_size}）小於建議尺寸（{fixed_image_size}），可能導致圖片失真'
+    }
+  </script>
+{% endblock %}

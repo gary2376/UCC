@@ -1,0 +1,442 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2021-08-27 19:49+0800\n"
+"PO-Revision-Date: 2021-08-28 16:15+0800\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"X-Generator: Poedit 3.0\n"
+
+#: .\venv\Lib\site-packages\filebrowser\actions.py:49
+#, python-format
+msgid "Action applied successfully to '%s'"
+msgstr "對「%s」操作成功"
+
+#: .\venv\Lib\site-packages\filebrowser\actions.py:55
+#: .\venv\Lib\site-packages\filebrowser\forms.py:17
+msgid "Flip horizontal"
+msgstr "水平翻轉"
+
+#: .\venv\Lib\site-packages\filebrowser\actions.py:62
+#: .\venv\Lib\site-packages\filebrowser\forms.py:18
+msgid "Flip vertical"
+msgstr "垂直翻轉"
+
+#: .\venv\Lib\site-packages\filebrowser\actions.py:69
+#: .\venv\Lib\site-packages\filebrowser\forms.py:19
+msgid "Rotate 90° CW"
+msgstr "順時針旋轉 90°"
+
+#: .\venv\Lib\site-packages\filebrowser\actions.py:76
+#: .\venv\Lib\site-packages\filebrowser\forms.py:20
+msgid "Rotate 90° CCW"
+msgstr "逆時針旋轉 90°"
+
+#: .\venv\Lib\site-packages\filebrowser\actions.py:83
+#: .\venv\Lib\site-packages\filebrowser\forms.py:21
+msgid "Rotate 180°"
+msgstr "旋轉 180°"
+
+#: .\venv\Lib\site-packages\filebrowser\decorators.py:37
+msgid ""
+"Error finding Upload-Folder (site.storage.location + site.directory). Maybe "
+"it does not exist?"
+msgstr "Upload-Folder (site.storage.location + site.directory) 也許不存在？"
+
+#: .\venv\Lib\site-packages\filebrowser\decorators.py:39
+msgid "The requested Folder does not exist."
+msgstr "資料夾不存在"
+
+#: .\venv\Lib\site-packages\filebrowser\decorators.py:53
+msgid "The requested File does not exist."
+msgstr "檔案不存在"
+
+#: .\venv\Lib\site-packages\filebrowser\fields.py:69
+#: .\venv\Lib\site-packages\filebrowser\fields.py:197
+#, python-format
+msgid "Extension %(ext)s is not allowed. Only %(allowed)s is allowed."
+msgstr "Extension %(ext)s is not allowed. Only %(allowed)s is allowed."
+
+#: .\venv\Lib\site-packages\filebrowser\forms.py:30
+#: .\venv\Lib\site-packages\filebrowser\forms.py:55
+msgid "Name"
+msgstr "名稱"
+
+#: .\venv\Lib\site-packages\filebrowser\forms.py:30
+#: .\venv\Lib\site-packages\filebrowser\forms.py:42
+#: .\venv\Lib\site-packages\filebrowser\forms.py:55
+#: .\venv\Lib\site-packages\filebrowser\forms.py:74
+msgid "Only letters, numbers, underscores, spaces and hyphens are allowed."
+msgstr "僅允許字母、數字、底線、空格、減號。"
+
+#: .\venv\Lib\site-packages\filebrowser\forms.py:45
+#: .\venv\Lib\site-packages\filebrowser\forms.py:77
+msgid "The Folder already exists."
+msgstr "資料夾已存在"
+
+#: .\venv\Lib\site-packages\filebrowser\forms.py:54
+msgid "Actions"
+msgstr "操作"
+
+#: .\venv\Lib\site-packages\filebrowser\forms.py:79
+msgid "The File already exists."
+msgstr "檔案已存在"
+
+#: .\venv\Lib\site-packages\filebrowser\models.py:8
+#: .\venv\Lib\site-packages\filebrowser\models.py:9
+#: .\venv\Lib\site-packages\filebrowser\sites.py:343
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\breadcrumbs.html:9
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\breadcrumbs.html:11
+msgid "FileBrowser"
+msgstr "檔案瀏覽器"
+
+#: .\venv\Lib\site-packages\filebrowser\settings.py:115
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:24
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:54
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:60
+msgid "Folder"
+msgstr "資料夾"
+
+#: .\venv\Lib\site-packages\filebrowser\settings.py:116
+msgid "Image"
+msgstr "圖片"
+
+#: .\venv\Lib\site-packages\filebrowser\settings.py:117
+msgid "Video"
+msgstr "影片"
+
+#: .\venv\Lib\site-packages\filebrowser\settings.py:118
+msgid "Document"
+msgstr "文件"
+
+#: .\venv\Lib\site-packages\filebrowser\settings.py:119
+msgid "Audio"
+msgstr "音訊"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:367
+#, python-format
+msgid "The Folder %s was successfully created."
+msgstr "資料夾 %s 建立成功。"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:373
+msgid "Permission denied."
+msgstr "沒有權限。"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:375
+msgid "Error creating folder."
+msgstr "建立資料夾時出錯。"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:385
+#: .\venv\Lib\site-packages\filebrowser\sites.py:389
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\index.html:121
+msgid "New Folder"
+msgstr "新增資料夾"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:403
+msgid "Select files to upload"
+msgstr "選擇檔案以上傳"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:407
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\index.html:122
+msgid "Upload"
+msgstr "上傳"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:441
+#: .\venv\Lib\site-packages\filebrowser\sites.py:445
+msgid "Confirm delete"
+msgstr "確定刪除"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:462
+#, python-format
+msgid "Successfully deleted %s"
+msgstr "成功刪除 %s"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:499
+msgid "Renaming was successful."
+msgstr "成功重新命名。"
+
+#: .\venv\Lib\site-packages\filebrowser\sites.py:508
+msgid "Error."
+msgstr "錯誤。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\createdir.html:28
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:45
+msgid "Please correct the following errors."
+msgstr "請修正以下錯誤。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\createdir.html:40
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:145
+msgid ""
+"The Name will be normalized by converting or stripping all non-standard "
+"characters."
+msgstr "名稱中的特殊字元將被轉換或去除。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\createdir.html:43
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:148
+msgid ""
+"The Name will be converted to lowercase. Spaces will be replaced with "
+"underscores."
+msgstr "名稱將被轉換為小寫，空白將被替換為底線。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\createdir.html:51
+msgid "Submit"
+msgstr "確定"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\custom_field.html:4
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:129
+msgid "Change"
+msgstr "變更"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\custom_field.html:29
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\custom_upload_field.html:6
+msgid "File not found"
+msgstr "找不到檔案"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\custom_upload_field.html:41
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:30
+msgid "Upload a file"
+msgstr "上傳檔案"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\delete_confirm.html:15
+#, python-format
+msgid ""
+"Are you sure you want to delete the %(object_name)s \"%(escaped_object)s\"? "
+"All of the following related items will be deleted:"
+msgstr ""
+"確定要刪除 %(object_name)s \"%(escaped_object)s\" 嗎？所有相關項目將被一併刪"
+"除："
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\delete_confirm.html:30
+#, python-format
+msgid "... and %(escaped_object)s more Files."
+msgstr "… 與另外 %(escaped_object)s 個檔案。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\delete_confirm.html:37
+msgid "Yes, I'm sure"
+msgstr "確定"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:57
+msgid "Edit"
+msgstr "編輯"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:69
+msgid "Folder Information"
+msgstr "資料夾資訊"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:72
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:101
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:87
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:93
+msgid "Date"
+msgstr "日期"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:82
+msgid "File Information"
+msgstr "檔案資訊"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:85
+msgid "URL"
+msgstr ""
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:93
+msgid "Filesize"
+msgstr "檔案大小"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:110
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:71
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:77
+msgid "Size"
+msgstr "大小"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:121
+msgid "Image Versions"
+msgstr "圖片版本"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:125
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:30
+msgid "Thumbnail"
+msgstr "縮圖"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:126
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:100
+msgid "View Image"
+msgstr "檢視圖片"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:146
+msgid "Delete"
+msgstr "刪除"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:148
+msgid "Save"
+msgstr "儲存"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\detail.html:149
+msgid "Save and continue editing"
+msgstr "儲存並繼續編輯"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\breadcrumbs.html:5
+msgid "Home"
+msgstr "首頁"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:20
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:46
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:71
+msgid "Versions"
+msgstr "版本"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:30
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:56
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filelisting.html:81
+msgid "Select"
+msgstr "選擇"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:3
+msgid "Filter"
+msgstr "過濾器"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:5
+msgid "By Date"
+msgstr "根據日期"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:8
+msgid "Any Date"
+msgstr "任何日期"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:10
+msgid "Today"
+msgstr "今天"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:12
+msgid "Past 7 days"
+msgstr "過去 7 天"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:14
+msgid "This Month"
+msgstr "這個月"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:16
+msgid "This year"
+msgstr "今年"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:19
+msgid "By Type"
+msgstr "根據類型"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\filter.html:22
+msgid "All"
+msgstr "所有"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\paginator.html:17
+msgid "total"
+msgstr "總共"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\paginator.html:18
+msgid "Show all"
+msgstr "顯示全部"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:16
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:37
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:52
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:69
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:85
+msgid "Toggle sorting"
+msgstr "切換排序"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:18
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:24
+msgid "Type"
+msgstr "類型"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:39
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\tableheader.html:44
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:143
+msgid "Filename"
+msgstr "檔案名稱"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\toolbar.html:6
+msgid "Results"
+msgstr "結果"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\toolbar.html:8
+#, python-format
+msgid "%(counter)s result"
+msgid_plural "%(counter)s results"
+msgstr[0] "%(counter)s 筆結果"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\toolbar.html:9
+#, python-format
+msgid "%(full_result_count)s total"
+msgstr "總共 %(full_result_count)s"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\include\toolbar.html:16
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\index.html:135
+msgid "Search"
+msgstr "搜尋"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:29
+msgid "Drop files here to upload"
+msgstr "拖曳檔案到這裡上傳"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:38
+msgid "Cancel"
+msgstr "取消"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:39
+msgid "Failed"
+msgstr "失敗"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:55
+#, python-brace-format
+msgid "{file} has invalid extension. Only {extensions} are allowed."
+msgstr "{file} 的副檔名無效，僅允許 {extensions}。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:56
+#, python-brace-format
+msgid "{file} is too large, maximum file size is {sizeLimit}."
+msgstr "{file} 過大，檔案大小上限為 {sizeLimit}。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:57
+#, python-brace-format
+msgid "{file} is too small, minimum file size is {minSizeLimit}."
+msgstr "{file} 過小，檔案大小下限為 {minSizeLimit}。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:58
+#, python-brace-format
+msgid "{file} is empty, please select files again without it."
+msgstr "{file} 是空的，請再次選擇並排除它。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:59
+msgid ""
+"The files are being uploaded, if you leave now the upload will be cancelled."
+msgstr "檔案正在被上傳。若現在離開，上傳將被取消。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:110
+msgid "Please enable Javascript to upload files."
+msgstr "請啟用 Javascript 以上傳檔案。"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:116
+msgid "Return to uploads"
+msgstr "返回"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:121
+msgid "Help"
+msgstr "幫助"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:124
+msgid "Allowed"
+msgstr "允許"
+
+#: .\venv\Lib\site-packages\filebrowser\templates\filebrowser\upload.html:136
+msgid "Max. Filesize"
+msgstr "最大檔案大小"
