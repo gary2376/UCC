@@ -121,7 +121,7 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'HOST':'127.0.0.1',
-        'PORT':'3306',
+        'PORT':'3308',
         'USER':'root',
         'PASSWORD':'',
         'NAME': 'django_template_db',
@@ -283,14 +283,9 @@ SIMPLEUI_CONFIG = {
                     'url': '/erp/clean/',
                 },
                 {
-                    'name': '檔案上傳',
-                    'icon': 'fas fa-upload',
-                    'url': '/erp/upload/',
-                },
-                {
                     'name': '生豆入庫記錄',
                     'icon': 'fas fa-coffee',
-                    'url': '/admin/app/greenbeaninboundrecord/',
+                    'url': '/erp/green-bean-records/',
                 },
                 {
                     'name': '原料倉管理',
@@ -301,11 +296,6 @@ SIMPLEUI_CONFIG = {
                     'name': '月度統計',
                     'icon': 'fas fa-chart-bar',
                     'url': '/admin/app/rawmaterialmonthlysummary/',
-                },
-                {
-                    'name': '上傳記錄',
-                    'icon': 'fas fa-history',
-                    'url': '/erp/upload/history/',
                 }
             ],
         },
@@ -359,6 +349,8 @@ SIMPLEUI_ANALYSIS = False
 SIMPLEUI_HOME_ACTION = True
 SIMPLEUI_DEFAULT = False  # 隱藏預設項目
 SIMPLEUI_LOGOUT = False   # 隱藏登出按鈕
+SIMPLEUI_LOGIN_LOGO = '/static/admin/simpleui-x/img/logo.png'
+
 SIMPLEUI_HOME_QUICK = [
     {
         'title': '🏢 ERP 系統儀表板',

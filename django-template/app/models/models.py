@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
 import uuid
 
 
@@ -249,3 +251,42 @@ class UploadRecordRelation(models.Model):
     
     def __str__(self):
         return f"{self.upload_record.file_name} -> {self.content_type}:{self.object_id}"
+
+
+class UserActivityLog(models.Model):
+    """用戶活動記錄"""
+    ACTION_CHOICES = [
+        ('create', '新增'),
+        ('update', '更新'),
+        ('delete', '刪除'),
+        ('upload', '上傳'),
+        ('export', '匯出'),
+        ('login', '登入'),
+        ('logout', '登出'),
+    ]
+    
+    class Meta:
+        db_table = 'app_user_activity_log'
+        verbose_name = '用戶活動記錄'
+        verbose_name_plural = '用戶活動記錄'
+        ordering = ['-created_at']
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='用戶')
+    action = models.CharField('操作類型', max_length=20, choices=ACTION_CHOICES)
+    description = models.CharField('操作描述', max_length=255)
+    
+    # 關聯的對象（可選）
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
+    object_id = models.UUIDField(null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    # 額外信息
+    ip_address = models.GenericIPAddressField('IP地址', null=True, blank=True)
+    user_agent = models.TextField('用戶代理', blank=True)
+    details = models.JSONField('詳細信息', default=dict, blank=True)
+    
+    created_at = models.DateTimeField('創建時間', auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_action_display()} - {self.description}"

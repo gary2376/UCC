@@ -1,0 +1,55 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.object-tools {
+    display: none !important; /* 隱藏新增按鈕 */
+}
+
+.custom-return-btn {
+    background-color: #007cba;
+    border-color: #007cba;
+    color: white;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    display: inline-block;
+}
+
+.custom-return-btn:hover {
+    background-color: #005a87;
+    border-color: #005a87;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content_title %}
+<div class="custom-return-section">
+    <a href="/erp/green-bean-records/" class="custom-return-btn">
+        <i class="fas fa-arrow-left"></i> 返回生豆入庫記錄
+    </a>
+</div>
+{{ block.super }}
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+// 隱藏所有新增相關按鈕
+document.addEventListener('DOMContentLoaded', function() {
+    // 隱藏新增按鈕
+    const addButtons = document.querySelectorAll('.addlink, .add-another');
+    addButtons.forEach(btn => btn.style.display = 'none');
+    
+    // 隱藏object-tools工具列
+    const objectTools = document.querySelector('.object-tools');
+    if (objectTools) {
+        objectTools.style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

@@ -81,7 +81,7 @@
         <div class="content-card">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h4><i class="fas fa-history"></i> 最近入庫記錄</h4>
-                <a href="/admin/app/greenbeaninboundrecord/" class="btn btn-sm btn-primary">
+                <a href="/erp/green-bean-records/" class="btn btn-sm btn-primary">
                     查看全部
                 </a>
             </div>
@@ -101,7 +101,7 @@
                         <tr>
                             <td>{{ record.record_time|date:"m-d H:i" }}</td>
                             <td>
-                                <a href="/admin/app/greenbeaninboundrecord/{{ record.id }}/change/" 
+                                <a href="/admin/app/greenbeaninboundrecord/{{ record.id }}/change/?from_green_bean_records=1" 
                                    class="text-decoration-none">
                                     {{ record.order_number }}
                                 </a>
@@ -186,8 +186,8 @@
             </h4>
             <div class="row">
                 <div class="col-md-6 mb-2">
-                    <a href="/admin/app/greenbeaninboundrecord/add/" class="btn btn-primary w-100">
-                        <i class="fas fa-plus"></i> 新增生豆記錄
+                    <a href="/erp/green-bean-records/" class="btn btn-primary w-100">
+                        <i class="fas fa-list"></i> 查看生豆記錄
                     </a>
                 </div>
                 <div class="col-md-6 mb-2">
@@ -221,7 +221,7 @@
                     </button>
                 </div>
                 <div class="col-md-6 mb-2">
-                    <a href="/admin/app/greenbeaninboundrecord/?is_abnormal__exact=1" class="btn btn-outline-danger w-100">
+                    <a href="/erp/green-bean-records/" class="btn btn-outline-danger w-100">
                         <i class="fas fa-exclamation-triangle"></i> 異常記錄
                     </a>
                 </div>

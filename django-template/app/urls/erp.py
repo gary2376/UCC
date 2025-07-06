@@ -7,14 +7,15 @@ from app.views.erp_views import (
     green_bean_records_api,
     raw_material_records_api,
     inventory_statistics_api,
-    production_statistics_api
-)
-from app.views.file_upload_views import (
-    file_upload_view,
-    upload_history_view,
+    production_statistics_api,
+    green_bean_records_view,
+    green_bean_upload_file,
+    delete_green_bean_record,
+    batch_delete_green_bean_records,
+    test_return_view,
     delete_upload_record,
-    batch_delete_upload_records,
-    clear_all_upload_records
+    get_upload_records,
+    get_user_activities
 )
 from app.views.permission_views import (
     permission_management_view,
@@ -37,13 +38,16 @@ urlpatterns = [
     path('api/raw-material-records/', raw_material_records_api, name='raw_material_records_api'),
     path('api/inventory-statistics/', inventory_statistics_api, name='inventory_statistics_api'),
     path('api/production-statistics/', production_statistics_api, name='production_statistics_api'),
-
-    # 檔案上傳功能
-    path('upload/', file_upload_view, name='file_upload'),
-    path('upload/history/', upload_history_view, name='upload_history'),
-    path('upload/delete/<uuid:upload_id>/', delete_upload_record, name='delete_upload_record'),
-    path('upload/batch-delete/', batch_delete_upload_records, name='batch_delete_upload_records'),
-    path('upload/clear-all/', clear_all_upload_records, name='clear_all_upload_records'),
+    
+    # 生豆入庫記錄頁面
+    path('green-bean-records/', green_bean_records_view, name='green_bean_records'),
+    path('green-bean-records/upload/', green_bean_upload_file, name='green_bean_upload_file'),
+    path('green-bean-records/delete/<uuid:record_id>/', delete_green_bean_record, name='delete_green_bean_record'),
+    path('green-bean-records/batch-delete/', batch_delete_green_bean_records, name='batch_delete_green_bean_records'),
+    path('green-bean-records/upload/delete/<uuid:upload_id>/', delete_upload_record, name='delete_upload_record'),
+    path('green-bean-records/uploads/', get_upload_records, name='get_upload_records'),
+    path('green-bean-records/activities/', get_user_activities, name='get_user_activities'),
+    path('test-return/', test_return_view, name='test_return'),
     
     # 權限管理功能
     path('permissions/', permission_management_view, name='permission_management'),

@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>生豆入庫記錄 - ERP 系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+        
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            text-align: center;
+        }
+        
+        .stats-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .stats-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stats-card .label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+        }
+        
+        .upload-zone {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+        
+        .upload-zone:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        
+        .upload-zone.dragover {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+        
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .btn-upload {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-upload:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .btn-upload:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .file-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .table-responsive {
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            background: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .pagination {
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .badge-abnormal {
+            background: #dc3545;
+        }
+        
+        .badge-normal {
+            background: #28a745;
+        }
+        
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .nav-tabs .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+        
+        .tab-content {
+            padding: 20px;
+            background: white;
+            border-radius: 0 0 10px 10px;
+        }
+        
+        .alert {
+            border-radius: 10px;
+        }
+        
+        .btn-outline-primary {
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline-primary:hover {
+            background: #667eea;
+            border-color: #667eea;
+        }
+        
+        .back-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background: #5a6268;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .recent-uploads {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .recent-uploads h6 {
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .recent-uploads .list-group-item {
+            border: none;
+            padding: 10px 0;
+            background: transparent;
+        }
+        
+        .recent-uploads .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-success {
+            color: #28a745;
+        }
+        
+        .status-failed {
+            color: #dc3545;
+        }
+        
+        .status-pending {
+            color: #ffc107;
+        }
+        
+        .activity-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #667eea;
+        }
+        
+        .activity-card.create {
+            border-left-color: #28a745;
+        }
+        
+        .activity-card.update {
+            border-left-color: #ffc107;
+        }
+        
+        .activity-card.delete {
+            border-left-color: #dc3545;
+        }
+        
+        .activity-card.upload {
+            border-left-color: #17a2b8;
+        }
+        
+        .activity-meta {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        
+        .activity-icon.create {
+            background: #28a74520;
+            color: #28a745;
+        }
+        
+        .activity-icon.update {
+            background: #ffc10720;
+            color: #ffc107;
+        }
+        
+        .activity-icon.delete {
+            background: #dc354520;
+            color: #dc3545;
+        }
+        
+        .activity-icon.upload {
+            background: #17a2b820;
+            color: #17a2b8;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .activity-description {
+            color: #6c757d;
+            margin-bottom: 10px;
+        }
+        
+        .activity-filters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-12">
+                    <h1 class="mb-0">
+                        <i class="fas fa-coffee me-3"></i>
+                        生豆入庫記錄管理
+                    </h1>
+                    <p class="mb-0 mt-2">管理和查看生豆入庫相關記錄</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 統計卡片 -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="icon text-primary">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="number text-primary">{{ total_records }}</div>
+                    <div class="label">總記錄數</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="icon text-danger">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="number text-danger">{{ abnormal_records }}</div>
+                    <div class="label">異常記錄</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="icon text-success">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div class="number text-success">{{ current_month_records }}</div>
+                    <div class="label">本月記錄</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <div class="icon text-info">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="number text-info">{{ total_activities|default:0 }}</div>
+                    <div class="label">活動記錄</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能按鈕 -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">
+                <i class="fas fa-seedling me-2"></i>生豆入庫記錄管理
+            </h4>
+            <button class="btn btn-outline-primary" onclick="refreshPage()">
+                <i class="fas fa-sync-alt me-2"></i>刷新頁面
+            </button>
+        </div>
+
+        <!-- 頁籤選單 -->
+        <ul class="nav nav-tabs" id="recordTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="records-tab" data-bs-toggle="tab" data-bs-target="#records" type="button" role="tab">
+                    <i class="fas fa-list me-2"></i>記錄列表
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="upload-tab" data-bs-toggle="tab" data-bs-target="#upload" type="button" role="tab">
+                    <i class="fas fa-upload me-2"></i>檔案上傳
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="activity-tab" data-bs-toggle="tab" data-bs-target="#activity" type="button" role="tab">
+                    <i class="fas fa-history me-2"></i>活動記錄
+                </button>
+            </li>
+        </ul>
+
+        <!-- 頁籤內容 -->
+        <div class="tab-content" id="recordTabsContent">
+            <!-- 記錄列表 -->
+            <div class="tab-pane fade show active" id="records" role="tabpanel">
+                <!-- 批量操作按鈕 -->
+                <div class="mb-3">
+                    <button class="btn btn-danger" id="batchDeleteBtn" disabled onclick="batchDeleteRecords()">
+                        <i class="fas fa-trash me-2"></i>批量刪除
+                    </button>
+                    <span class="text-muted ms-3" id="selectedCount">已選擇 0 筆記錄</span>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll">
+                                        <label class="form-check-label" for="selectAll"></label>
+                                    </div>
+                                </th>
+                                <th>訂單編號</th>
+                                <th>生豆名稱</th>
+                                <th>生豆料號</th>
+                                <th>生豆批號</th>
+                                <th>需求重量(kg)</th>
+                                <th>量測重量(kg)</th>
+                                <th>記錄時間</th>
+                                <th>狀態</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for record in page_obj %}
+                            <tr>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input record-checkbox" type="checkbox" value="{{ record.id }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <strong>{{ record.order_number|default:"--" }}</strong>
+                                </td>
+                                <td>{{ record.green_bean_name|default:"--" }}</td>
+                                <td>{{ record.green_bean_code|default:"--" }}</td>
+                                <td>{{ record.green_bean_batch_number|default:"--" }}</td>
+                                <td>
+                                    {% if record.required_weight_kg %}
+                                        {{ record.required_weight_kg|floatformat:2 }}
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.measured_weight_kg %}
+                                        {{ record.measured_weight_kg|floatformat:2 }}
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.record_time %}
+                                        {{ record.record_time|date:"Y-m-d H:i" }}
+                                    {% else %}
+                                        --
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if record.is_abnormal %}
+                                        <span class="badge badge-abnormal">異常</span>
+                                    {% else %}
+                                        <span class="badge badge-normal">正常</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="/admin/app/greenbeaninboundrecord/{{ record.id }}/change/?from_green_bean_records=1" class="btn btn-sm btn-outline-primary" title="編輯">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteRecord('{{ record.id }}', '{{ record.order_number }}')" title="刪除">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="10" class="text-center py-5">
+                                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                    <p class="text-muted">目前沒有任何記錄</p>
+                                    <p class="text-muted">您可以透過上傳檔案來新增記錄</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分頁 -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="記錄分頁">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">首頁</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">上一頁</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">下一頁</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">末頁</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+
+            <!-- 檔案上傳 -->
+            <div class="tab-pane fade" id="upload" role="tabpanel">
+                <!-- 最近上傳記錄 -->
+                {% if recent_uploads %}
+                <div class="recent-uploads">
+                    <h6><i class="fas fa-history me-2"></i>最近上傳記錄</h6>
+                    <div class="list-group" id="recentUploads">
+                        {% for upload in recent_uploads %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center" data-upload-id="{{ upload.id }}">
+                            <div>
+                                <strong>{{ upload.file_name }}</strong>
+                                <small class="text-muted d-block">{{ upload.upload_time|date:"Y-m-d H:i" }}</small>
+                            </div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge bg-secondary me-2">{{ upload.records_count }} 筆</span>
+                                {% if upload.status == 'success' %}
+                                    <i class="fas fa-check-circle status-success me-2"></i>
+                                {% elif upload.status == 'failed' %}
+                                    <i class="fas fa-times-circle status-failed me-2"></i>
+                                {% else %}
+                                    <i class="fas fa-clock status-pending me-2"></i>
+                                {% endif %}
+                                <!-- 刪除按鈕 -->
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteUploadRecord('{{ upload.id }}', '{{ upload.file_name }}')"
+                                        title="刪除上傳記錄及相關資料">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- 檔案上傳區域 -->
+                <div class="upload-zone" onclick="document.getElementById('fileInput').click();">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <h4>拖拽檔案到此處或點擊上傳</h4>
+                    <p class="text-muted">支援 .xlsx 和 .xls 格式的檔案</p>
+                    <input type="file" id="fileInput" class="file-input" accept=".xlsx,.xls">
+                </div>
+
+                <!-- 檔案資訊 -->
+                <div class="file-info" id="fileInfo">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>檔案名稱：</strong>
+                            <span id="fileName"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>檔案大小：</strong>
+                            <span id="fileSize"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>檔案類型：</strong>
+                            <span id="fileType"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 進度條 -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div class="text-center mt-2">
+                        <small class="text-muted">正在處理檔案...</small>
+                    </div>
+                </div>
+
+                <!-- 上傳按鈕 -->
+                <div class="text-center mt-4">
+                    <button class="btn btn-upload" id="uploadBtn" disabled>
+                        <i class="fas fa-upload me-2"></i>
+                        開始上傳
+                    </button>
+                </div>
+
+                <!-- 使用說明 -->
+                <div class="mt-4">
+                    <h6><i class="fas fa-info-circle me-2"></i>使用說明</h6>
+                    <ul class="text-muted">
+                        <li>請確保Excel檔案包含以下必要欄位：<strong>單號、生豆名稱、生豆料號</strong></li>
+                        <li>支援的欄位包括：實時、記錄時間、單號、炒豆、生豆、批次、熱行、主豆、生豆料號、生豆名稱、生豆入庫、重量、投入、需求、生豆量測、手動投入、作業開始時間、作業結束時間、作業時間、ICO、備註</li>
+                        <li>支援的檔案格式：.xlsx、.xls</li>
+                        <li>檔案大小限制：50MB</li>
+                        <li>系統會自動檢查重複檔案</li>
+                        <li>日期時間欄位支援多種格式自動識別</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 活動記錄 -->
+            <div class="tab-pane fade" id="activity" role="tabpanel">
+                <!-- 活動統計 -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="icon text-success">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <div class="number text-success">{{ activity_stats.creates|default:0 }}</div>
+                            <div class="label">新增操作</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="icon text-warning">
+                                <i class="fas fa-edit"></i>
+                            </div>
+                            <div class="number text-warning">{{ activity_stats.updates|default:0 }}</div>
+                            <div class="label">編輯操作</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="icon text-danger">
+                                <i class="fas fa-trash"></i>
+                            </div>
+                            <div class="number text-danger">{{ activity_stats.deletes|default:0 }}</div>
+                            <div class="label">刪除操作</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stats-card">
+                            <div class="icon text-info">
+                                <i class="fas fa-upload"></i>
+                            </div>
+                            <div class="number text-info">{{ activity_stats.uploads|default:0 }}</div>
+                            <div class="label">上傳操作</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 篩選器 -->
+                <div class="activity-filters">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <label for="activityUser" class="form-label">使用者</label>
+                            <select class="form-select" id="activityUser">
+                                <option value="">所有使用者</option>
+                                {% for user in activity_users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name|default:user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="activityType" class="form-label">操作類型</label>
+                            <select class="form-select" id="activityType">
+                                <option value="">所有類型</option>
+                                <option value="create">新增</option>
+                                <option value="update">編輯</option>
+                                <option value="delete">刪除</option>
+                                <option value="upload">上傳</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="activityDate" class="form-label">日期範圍</label>
+                            <select class="form-select" id="activityDate">
+                                <option value="">所有時間</option>
+                                <option value="today">今天</option>
+                                <option value="week">最近一週</option>
+                                <option value="month">最近一個月</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <div>
+                                <button class="btn btn-primary" onclick="filterActivities()">
+                                    <i class="fas fa-search me-2"></i>篩選
+                                </button>
+                                <button class="btn btn-outline-secondary ms-2" onclick="clearActivityFilters()">
+                                    <i class="fas fa-times me-2"></i>清除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 活動記錄列表 -->
+                <div id="activityList">
+                    {% if user_activities %}
+                        {% for activity in user_activities %}
+                        <div class="activity-card {{ activity.action }}">
+                            <div class="d-flex">
+                                <div class="activity-icon {{ activity.action }}">
+                                    {% if activity.action == 'create' %}
+                                        <i class="fas fa-plus"></i>
+                                    {% elif activity.action == 'update' %}
+                                        <i class="fas fa-edit"></i>
+                                    {% elif activity.action == 'delete' %}
+                                        <i class="fas fa-trash"></i>
+                                    {% elif activity.action == 'upload' %}
+                                        <i class="fas fa-upload"></i>
+                                    {% else %}
+                                        <i class="fas fa-info"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="activity-content">
+                                    <div class="activity-title">
+                                        {% if activity.action == 'create' %}
+                                            新增記錄
+                                        {% elif activity.action == 'update' %}
+                                            編輯記錄
+                                        {% elif activity.action == 'delete' %}
+                                            刪除記錄
+                                        {% elif activity.action == 'upload' %}
+                                            上傳檔案
+                                        {% else %}
+                                            {{ activity.action|title }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="activity-description">
+                                        {{ activity.description|default:"執行了相關操作" }}
+                                    </div>
+                                    <div class="activity-meta">
+                                        <i class="fas fa-user me-1"></i>
+                                        {{ activity.user.get_full_name|default:activity.user.username }}
+                                        <i class="fas fa-clock ms-3 me-1"></i>
+                                        {{ activity.created_at|date:"Y-m-d H:i:s" }}
+                                        {% if activity.ip_address %}
+                                            <i class="fas fa-globe ms-3 me-1"></i>
+                                            {{ activity.ip_address }}
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-clock fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">目前沒有活動記錄</p>
+                            <p class="text-muted">使用者的操作記錄將顯示在這裡</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- 載入更多按鈕 -->
+                {% if has_more_activities %}
+                <div class="text-center mt-4">
+                    <button class="btn btn-outline-primary" onclick="loadMoreActivities()">
+                        <i class="fas fa-plus me-2"></i>載入更多記錄
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let selectedFile = null;
+        const fileInput = document.getElementById('fileInput');
+        const uploadZone = document.querySelector('.upload-zone');
+        const fileInfo = document.getElementById('fileInfo');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressContainer = document.getElementById('progressContainer');
+
+        // 檔案選擇處理
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        // 拖拽功能
+        uploadZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadZone.classList.add('dragover');
+        });
+
+        uploadZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+        });
+
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            
+            // 檢查檔案類型
+            if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+                alert('請選擇 Excel 檔案（.xlsx 或 .xls）');
+                return;
+            }
+
+            // 顯示檔案資訊
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = formatFileSize(file.size);
+            document.getElementById('fileType').textContent = file.name.split('.').pop().toUpperCase();
+            
+            fileInfo.style.display = 'block';
+            uploadBtn.disabled = false;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 上傳按鈕點擊事件
+        uploadBtn.addEventListener('click', function() {
+            if (!selectedFile) {
+                alert('請先選擇檔案');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            // 顯示進度條
+            progressContainer.style.display = 'block';
+            uploadBtn.disabled = true;
+
+            fetch('/erp/green-bean-records/upload/', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                progressContainer.style.display = 'none';
+                uploadBtn.disabled = false;
+                
+                if (data.success) {
+                    alert('上傳成功！' + data.message);
+                    // 重新載入頁面以顯示新記錄
+                    location.reload();
+                } else {
+                    alert('上傳失敗：' + data.message);
+                }
+            })
+            .catch(error => {
+                progressContainer.style.display = 'none';
+                uploadBtn.disabled = false;
+                alert('上傳過程中發生錯誤：' + error.message);
+            });
+        });
+
+        // 取得CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // 刪除單筆記錄
+        function deleteRecord(recordId, orderNumber) {
+            if (confirm(`確定要刪除訂單編號 "${orderNumber}" 的記錄嗎？`)) {
+                fetch(`/erp/green-bean-records/delete/${recordId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('記錄已成功刪除');
+                        location.reload();
+                    } else {
+                        alert('刪除失敗：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('刪除過程中發生錯誤：' + error.message);
+                });
+            }
+        }
+
+        // 批量刪除記錄
+        function batchDeleteRecords() {
+            const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+            const recordIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+            
+            if (recordIds.length === 0) {
+                alert('請選擇要刪除的記錄');
+                return;
+            }
+            
+            if (confirm(`確定要刪除選中的 ${recordIds.length} 筆記錄嗎？`)) {
+                fetch('/erp/green-bean-records/batch-delete/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        record_ids: recordIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('刪除失敗：' + data.message);
+                    }
+                })
+                .catch(error => {
+                    alert('刪除過程中發生錯誤：' + error.message);
+                });
+            }
+        }
+
+        // 全選/取消全選
+        document.getElementById('selectAll').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.record-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateSelectedCount();
+        });
+
+        // 更新選中計數
+        function updateSelectedCount() {
+            const selectedCheckboxes = document.querySelectorAll('.record-checkbox:checked');
+            const count = selectedCheckboxes.length;
+            document.getElementById('selectedCount').textContent = `已選擇 ${count} 筆記錄`;
+            document.getElementById('batchDeleteBtn').disabled = count === 0;
+        }
+
+        // 監聽復選框變化
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('record-checkbox')) {
+                updateSelectedCount();
+            }
+        });
+
+        // 刷新頁面
+        function refreshPage() {
+            location.reload();
+        }
+
+        // 刪除上傳記錄
+        function deleteUploadRecord(uploadId, fileName) {
+            if (confirm(`確定要刪除上傳記錄 "${fileName}" 嗎？\n\n注意：這將會刪除此次上傳的所有相關資料庫記錄，此操作無法還原！`)) {
+                fetch(`/erp/green-bean-records/upload/delete/${uploadId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showAlert('success', data.message);
+                        // 刷新上傳記錄列表
+                        refreshUploadRecords();
+                        // 刷新記錄列表
+                        refreshRecordsList();
+                    } else {
+                        showAlert('error', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('刪除上傳記錄時發生錯誤:', error);
+                    showAlert('error', '刪除上傳記錄時發生錯誤');
+                });
+            }
+        }
+
+        // 刷新上傳記錄列表
+        function refreshUploadRecords() {
+            fetch('/erp/green-bean-records/uploads/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const container = document.getElementById('recentUploads');
+                        if (container) {
+                            if (data.uploads.length > 0) {
+                                container.innerHTML = data.uploads.map(upload => `
+                                    <div class="list-group-item d-flex justify-content-between align-items-center" data-upload-id="${upload.id}">
+                                        <div>
+                                            <strong>${upload.file_name}</strong>
+                                            <small class="text-muted d-block">${upload.upload_time}</small>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-secondary me-2">${upload.records_count} 筆</span>
+                                            ${upload.status === 'success' ? '<i class="fas fa-check-circle status-success me-2"></i>' : 
+                                              upload.status === 'failed' ? '<i class="fas fa-times-circle status-failed me-2"></i>' : 
+                                              '<i class="fas fa-clock status-pending me-2"></i>'}
+                                            ${upload.can_delete ? 
+                                              `<button class="btn btn-sm btn-outline-danger" 
+                                                      onclick="deleteUploadRecord('${upload.id}', '${upload.file_name}')"
+                                                      title="刪除上傳記錄及相關資料">
+                                                  <i class="fas fa-trash"></i>
+                                              </button>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('');
+                            } else {
+                                container.innerHTML = '<div class="text-muted text-center py-3">暫無上傳記錄</div>';
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('刷新上傳記錄時發生錯誤:', error);
+                });
+        }
+
+        // 刷新記錄列表（重新載入頁面中的記錄部分）
+        function refreshRecordsList() {
+            // 這裡可以實現局部刷新，暫時使用重新載入頁面
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
+        }
+
+        // 獲取CSRF Token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // 顯示提示訊息
+        function showAlert(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            // 插入到頁面頂部
+            const container = document.querySelector('.container-fluid');
+            if (container) {
+                container.insertAdjacentHTML('afterbegin', alertHtml);
+            }
+        }
+
+        // 活動記錄相關功能
+        let currentActivityPage = 1;
+        let activityFilters = {};
+
+        // 篩選活動記錄
+        function filterActivities() {
+            const user = document.getElementById('activityUser').value;
+            const type = document.getElementById('activityType').value;
+            const date = document.getElementById('activityDate').value;
+            
+            activityFilters = {
+                user: user,
+                type: type,
+                date: date,
+                page: 1
+            };
+            
+            currentActivityPage = 1;
+            loadActivities();
+        }
+
+        // 清除篩選器
+        function clearActivityFilters() {
+            document.getElementById('activityUser').value = '';
+            document.getElementById('activityType').value = '';
+            document.getElementById('activityDate').value = '';
+            
+            activityFilters = {};
+            currentActivityPage = 1;
+            loadActivities();
+        }
+
+        // 載入活動記錄
+        function loadActivities(append = false) {
+            const params = new URLSearchParams({
+                ...activityFilters,
+                page: currentActivityPage
+            });
+
+            fetch(`/erp/green-bean-records/activities/?${params}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const activityList = document.getElementById('activityList');
+                        
+                        if (append) {
+                            activityList.insertAdjacentHTML('beforeend', data.html);
+                        } else {
+                            activityList.innerHTML = data.html;
+                        }
+                        
+                        // 更新載入更多按鈕
+                        const loadMoreBtn = document.querySelector('[onclick="loadMoreActivities()"]');
+                        if (loadMoreBtn) {
+                            if (data.has_more) {
+                                loadMoreBtn.style.display = 'block';
+                            } else {
+                                loadMoreBtn.style.display = 'none';
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('載入活動記錄時發生錯誤:', error);
+                });
+        }
+
+        // 載入更多活動記錄
+        function loadMoreActivities() {
+            currentActivityPage++;
+            loadActivities(true);
+        }
+
+        // 當切換到活動記錄頁籤時載入數據
+        document.getElementById('activity-tab').addEventListener('click', function() {
+            if (currentActivityPage === 1 && Object.keys(activityFilters).length === 0) {
+                loadActivities();
+            }
+        });
+    </script>
+</body>
+</html>

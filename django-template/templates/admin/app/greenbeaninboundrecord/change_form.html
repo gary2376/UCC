@@ -1,0 +1,60 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}
+{{ block.super }}
+{% endblock %}
+
+{% block content_title %}
+{{ block.super }}
+{% endblock %}
+
+{% block submit_buttons_bottom %}
+{{ block.super }}
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+<script>
+// 覆蓋所有可能的返回行為
+document.addEventListener('DOMContentLoaded', function() {
+    // 覆蓋瀏覽器返回按鈕
+    window.addEventListener('popstate', function(event) {
+        window.location.href = '/erp/green-bean-records/';
+    });
+    
+    // 覆蓋所有可能的返回連結
+    const returnLinks = document.querySelectorAll('a[href*="changelist"], a[href*="list"]');
+    returnLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = '/erp/green-bean-records/';
+        });
+    });
+    
+    // 覆蓋breadcrumb返回
+    const breadcrumbs = document.querySelectorAll('.breadcrumbs a');
+    breadcrumbs.forEach(link => {
+        if (link.href.includes('greenbeaninboundrecord')) {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                window.location.href = '/erp/green-bean-records/';
+            });
+        }
+    });
+    
+    // 處理表單提交後的返回
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            // 延遲重定向，確保表單提交完成
+            setTimeout(function() {
+                if (!document.querySelector('.errornote, .errorlist')) {
+                    window.location.href = '/erp/green-bean-records/';
+                }
+            }, 1500);
+        });
+    });
+});
+</script>
+{% endblock %}

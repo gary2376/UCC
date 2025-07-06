@@ -82,6 +82,20 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
     readonly_fields = ['id', 'created_at', 'updated_at']
     date_hierarchy = 'record_time'
     
+    # 隱藏新增按鈕
+    def has_add_permission(self, request):
+        """禁用新增功能"""
+        return False
+    
+    def changelist_view(self, request, extra_context=None):
+        """重定向列表頁面到自定義頁面"""
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('/erp/green-bean-records/')
+    
+    def has_module_permission(self, request):
+        """隱藏admin模組"""
+        return False
+    
     fieldsets = (
         ('基本資訊', {
             'fields': (
@@ -115,6 +129,33 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
+    
+    def response_change(self, request, obj):
+        """自定義編輯後的返回行為"""
+        # 如果來自我們的自定義頁面，直接返回
+        if 'from_green_bean_records' in request.GET:
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect('/erp/green-bean-records/')
+        
+        return super().response_change(request, obj)
+    
+    def response_add(self, request, obj, post_url_continue=None):
+        """自定義新增後的返回行為"""
+        # 如果來自我們的自定義頁面，直接返回
+        if 'from_green_bean_records' in request.GET:
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect('/erp/green-bean-records/')
+        
+        return super().response_add(request, obj, post_url_continue)
+    
+    def response_delete(self, request, obj_display, obj_id):
+        """自定義刪除後的返回行為"""
+        # 如果來自我們的自定義頁面，直接返回
+        if 'from_green_bean_records' in request.GET:
+            from django.http import HttpResponseRedirect
+            return HttpResponseRedirect('/erp/green-bean-records/')
+        
+        return super().response_delete(request, obj_display, obj_id)
 
 
 @admin.register(RawMaterialWarehouseRecord)

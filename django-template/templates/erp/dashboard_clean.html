@@ -93,6 +93,56 @@
         .stats-icon {
             opacity: 0.7;
         }
+        
+        /* 改善表格樣式 */
+        .dashboard-table {
+            font-size: 0.9rem;
+        }
+        
+        .dashboard-table th {
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .dashboard-table td {
+            vertical-align: middle;
+            padding: 12px 8px;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,123,255,.075);
+        }
+        
+        /* 記錄查看按鈕 */
+        .btn-outline-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,123,255,.3);
+        }
+        
+        /* 活動記錄區域 */
+        .activity-scroll {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        
+        /* 自定義滾動條 */
+        .activity-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .activity-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .activity-scroll::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        
+        .activity-scroll::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
     </style>
 </head>
 <body>
@@ -165,36 +215,106 @@
             </div>
         </div>
 
+        <!-- 本週記錄統計卡片 -->
         <div class="row">
-            <!-- 最近入庫記錄 -->
-            <div class="col-md-8">
+            <div class="col-md-12">
+                <div class="content-card">
+                    <h4 class="mb-4">
+                        <i class="fas fa-chart-line text-primary me-2"></i> 
+                        本週記錄統計
+                    </h4>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h2 class="text-primary mb-0">{{ weekly_comparison.this_week_count }}</h2>
+                                <small class="text-muted">本週記錄數</small>
+                                <div class="text-muted small">{{ weekly_comparison.week_start }} 起</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <h2 class="text-secondary mb-0">{{ weekly_comparison.last_month_weekly_avg }}</h2>
+                                <small class="text-muted">{{ weekly_comparison.comparison_month }}週均</small>
+                                <div class="text-muted small">每週平均記錄數</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                {% if weekly_comparison.trend == 'up' %}
+                                    <h2 class="text-success mb-0">+{{ weekly_comparison.percentage_change }}%</h2>
+                                    <small class="text-success">{{ weekly_comparison.trend_text }}</small>
+                                {% elif weekly_comparison.trend == 'down' %}
+                                    <h2 class="text-danger mb-0">{{ weekly_comparison.percentage_change }}%</h2>
+                                    <small class="text-danger">{{ weekly_comparison.trend_text }}</small>
+                                {% else %}
+                                    <h2 class="text-warning mb-0">{{ weekly_comparison.percentage_change }}%</h2>
+                                    <small class="text-warning">{{ weekly_comparison.trend_text }}</small>
+                                {% endif %}
+                                <div class="text-muted small">相對變化</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                {% if weekly_comparison.trend == 'up' %}
+                                    <i class="fas fa-arrow-up fa-3x text-success"></i>
+                                {% elif weekly_comparison.trend == 'down' %}
+                                    <i class="fas fa-arrow-down fa-3x text-danger"></i>
+                                {% else %}
+                                    <i class="fas fa-minus fa-3x text-warning"></i>
+                                {% endif %}
+                                <div class="text-muted small mt-2">趨勢指標</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 最近入庫記錄 - 占滿整行寬度 -->
+            <div class="col-md-12">
                 <div class="content-card">
                     <h4 class="mb-4">
                         <i class="fas fa-history text-primary me-2"></i> 
                         最近入庫記錄
                     </h4>
                     <div class="table-responsive">
-                        <table class="table dashboard-table">
+                        <table class="table dashboard-table table-hover">
                             <thead class="table-primary">
                                 <tr>
-                                    <th>記錄時間</th>
-                                    <th>單號</th>
-                                    <th>生豆名稱</th>
-                                    <th>重量(kg)</th>
-                                    <th>狀態</th>
+                                    <th style="width: 15%;">記錄時間</th>
+                                    <th style="width: 20%;">單號</th>
+                                    <th style="width: 30%;">生豆名稱</th>
+                                    <th style="width: 15%;">重量(kg)</th>
+                                    <th style="width: 10%;">狀態</th>
+                                    <th style="width: 10%;">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for record in recent_records %}
                                 <tr>
-                                    <td>{{ record.record_time|date:"m-d H:i" }}</td>
-                                    <td>{{ record.order_number }}</td>
-                                    <td>{{ record.green_bean_name|default:"-" }}</td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">{{ record.record_time|date:"m-d" }}</span>
+                                            <small class="text-muted">{{ record.record_time|date:"H:i" }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-primary">{{ record.order_number|truncatechars:20 }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">{{ record.green_bean_name|default:"-"|truncatechars:25 }}</span>
+                                            {% if record.green_bean_code %}
+                                                <small class="text-muted">{{ record.green_bean_code }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
                                     <td>
                                         {% if record.measured_weight_kg %}
-                                            <span class="badge bg-info">{{ record.measured_weight_kg }}</span>
+                                            <span class="badge bg-info fs-6">{{ record.measured_weight_kg }}</span>
                                         {% else %}
-                                            -
+                                            <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td>
@@ -204,10 +324,79 @@
                                             <span class="badge bg-success">正常</span>
                                         {% endif %}
                                     </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="viewRecord('{{ record.id }}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="5" class="text-center text-muted">暫無記錄</td>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-inbox fa-2x mb-2"></i>
+                                        <div>暫無記錄</div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- 用戶活動記錄 -->
+            <div class="col-md-8">
+                <div class="content-card">
+                    <h4 class="mb-4">
+                        <i class="fas fa-user-clock text-success me-2"></i> 
+                        用戶活動記錄
+                    </h4>
+                    <div class="activity-scroll">
+                        <table class="table table-sm dashboard-table table-hover">
+                            <thead class="table-success sticky-top">
+                                <tr>
+                                    <th style="width: 20%;">時間</th>
+                                    <th style="width: 20%;">用戶</th>
+                                    <th style="width: 20%;">操作</th>
+                                    <th style="width: 40%;">描述</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for activity in recent_activities %}
+                                <tr>
+                                    <td>
+                                        <small>{{ activity.created_at|date:"m-d H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ activity.user.username }}</span>
+                                    </td>
+                                    <td>
+                                        {% if activity.action == 'create' %}
+                                            <span class="badge bg-success">{{ activity.get_action_display }}</span>
+                                        {% elif activity.action == 'update' %}
+                                            <span class="badge bg-warning">{{ activity.get_action_display }}</span>
+                                        {% elif activity.action == 'delete' %}
+                                            <span class="badge bg-danger">{{ activity.get_action_display }}</span>
+                                        {% elif activity.action == 'upload' %}
+                                            <span class="badge bg-info">{{ activity.get_action_display }}</span>
+                                        {% elif activity.action == 'export' %}
+                                            <span class="badge bg-primary">{{ activity.get_action_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ activity.get_action_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ activity.description|truncatechars:30 }}</small>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted py-3">
+                                        <i class="fas fa-clock fa-2x mb-2"></i>
+                                        <div>暫無活動記錄</div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -225,24 +414,38 @@
                     </h4>
                     <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-sm dashboard-table">
-                            <thead class="table-warning">
+                            <thead class="table-warning sticky-top">
                                 <tr>
                                     <th>品名</th>
                                     <th>庫存</th>
+                                    <th>狀態</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for item in low_inventory_items %}
                                 <tr>
-                                    <td>{{ item.product_name|truncatechars:20 }}</td>
                                     <td>
-                                        <span class="badge bg-warning">{{ item.current_inventory|floatformat:1 }}</span>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold">{{ item.product_name|truncatechars:30 }}</span>
+                                            {% if item.product_code %}
+                                                <small class="text-muted">{{ item.product_code }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning fs-6">{{ item.current_inventory|floatformat:1 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>低庫存
+                                        </span>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="2" class="text-center text-success">
-                                        <i class="fas fa-check-circle"></i> 庫存充足
+                                    <td colspan="3" class="text-center text-success py-4">
+                                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                                        <div>庫存充足</div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -256,5 +459,34 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 查看記錄詳情
+        function viewRecord(recordId) {
+            // 可以跳轉到詳細頁面或打開模態框
+            console.log('查看記錄 ID:', recordId);
+            // 這裡可以添加具體的查看邏輯
+            alert('查看記錄功能正在開發中...');
+        }
+        
+        // 自動刷新頁面（可選）
+        function autoRefresh() {
+            const refreshInterval = 300000; // 5分鐘
+            setTimeout(() => {
+                location.reload();
+            }, refreshInterval);
+        }
+        
+        // 頁面載入完成後執行
+        document.addEventListener('DOMContentLoaded', function() {
+            // autoRefresh(); // 取消註釋以啟用自動刷新
+            
+            // 添加工具提示
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
 </body>
 </html>
