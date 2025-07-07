@@ -834,16 +834,6 @@ def get_upload_records(request):
 
 
 @login_required
-def test_return_view(request):
-    """測試返回頁面"""
-    return JsonResponse({
-        'success': True,
-        'message': '返回功能正常',
-        'referer': request.META.get('HTTP_REFERER', ''),
-        'get_params': dict(request.GET)
-    })
-
-
 @login_required
 @require_http_methods(["GET"])
 def get_user_activities(request):

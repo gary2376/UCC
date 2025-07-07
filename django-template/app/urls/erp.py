@@ -13,7 +13,6 @@ from app.views.erp_views import (
     add_green_bean_record,
     delete_green_bean_record,
     batch_delete_green_bean_records,
-    test_return_view,
     delete_upload_record,
     get_upload_records,
     activity_log_view,
@@ -51,7 +50,6 @@ urlpatterns = [
     path('green-bean-records/uploads/', get_upload_records, name='get_upload_records'),
     path('activity-log/', activity_log_view, name='activity_log'),
     path('activity-log/add/', add_activity_record, name='add_activity_record'),
-    path('test-return/', test_return_view, name='test_return'),
     
     # 權限管理功能
     path('permissions/', permission_management_view, name='permission_management'),
