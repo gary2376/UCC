@@ -159,6 +159,90 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
         
         return super().response_delete(request, obj_display, obj_id)
     
+    def save_model(self, request, obj, form, change):
+        """重寫保存模型方法以記錄活動"""
+        # 獲取舊值（如果是編輯）
+        old_values = {}
+        if change and obj.pk:
+            try:
+                old_obj = GreenBeanInboundRecord.objects.get(pk=obj.pk)
+                old_values = {
+                    'order_number': old_obj.order_number,
+                    'green_bean_name': old_obj.green_bean_name,
+                    'green_bean_code': old_obj.green_bean_code,
+                    'green_bean_batch_number': old_obj.green_bean_batch_number,
+                    'required_weight_kg': float(old_obj.required_weight_kg) if old_obj.required_weight_kg else None,
+                    'measured_weight_kg': float(old_obj.measured_weight_kg) if old_obj.measured_weight_kg else None,
+                    'execution_status': old_obj.execution_status,
+                    'is_abnormal': old_obj.is_abnormal,
+                    'record_time': old_obj.record_time.isoformat() if old_obj.record_time else None,
+                }
+            except GreenBeanInboundRecord.DoesNotExist:
+                pass
+        
+        # 保存物件
+        super().save_model(request, obj, form, change)
+        
+        # 記錄活動
+        if change:
+            # 獲取新值
+            new_values = {
+                'order_number': obj.order_number,
+                'green_bean_name': obj.green_bean_name,
+                'green_bean_code': obj.green_bean_code,
+                'green_bean_batch_number': obj.green_bean_batch_number,
+                'required_weight_kg': float(obj.required_weight_kg) if obj.required_weight_kg else None,
+                'measured_weight_kg': float(obj.measured_weight_kg) if obj.measured_weight_kg else None,
+                'execution_status': obj.execution_status,
+                'is_abnormal': obj.is_abnormal,
+                'record_time': obj.record_time.isoformat() if obj.record_time else None,
+            }
+            
+            # 找出變更的欄位
+            changed_fields = []
+            for key, new_value in new_values.items():
+                old_value = old_values.get(key)
+                if old_value != new_value:
+                    changed_fields.append({
+                        'field': key,
+                        'old_value': old_value,
+                        'new_value': new_value
+                    })
+            
+            # 記錄編輯活動
+            log_user_activity(
+                request.user,
+                'update',
+                f'從管理後台編輯生豆入庫記錄: {obj.order_number} - {obj.green_bean_name}',
+                content_object=obj,
+                request=request,
+                details={
+                    'record_id': str(obj.id),
+                    'changed_fields': changed_fields,
+                    'old_values': old_values,
+                    'new_values': new_values,
+                    'update_time': datetime.now().isoformat(),
+                    'update_source': 'admin_backend'
+                }
+            )
+        else:
+            # 記錄新增活動
+            log_user_activity(
+                request.user,
+                'create',
+                f'從管理後台新增生豆入庫記錄: {obj.order_number} - {obj.green_bean_name}',
+                content_object=obj,
+                request=request,
+                details={
+                    'record_id': str(obj.id),
+                    'order_number': obj.order_number,
+                    'green_bean_name': obj.green_bean_name,
+                    'green_bean_code': obj.green_bean_code,
+                    'creation_time': datetime.now().isoformat(),
+                    'creation_source': 'admin_backend'
+                }
+            )
+
     def delete_model(self, request, obj):
         """重寫刪除模型方法以記錄活動"""
         # 保存記錄資訊用於記錄

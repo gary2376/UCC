@@ -275,6 +275,82 @@
         .bg-primary.text-white .btn-close-white {
             filter: brightness(0) invert(1);
         }
+        
+        /* 活動記錄相關樣式 */
+        .activity-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .activity-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .activity-card.create {
+            border-left-color: #28a745;
+        }
+        
+        .activity-card.update {
+            border-left-color: #ffc107;
+        }
+        
+        .activity-card.delete {
+            border-left-color: #dc3545;
+        }
+        
+        .activity-card.upload {
+            border-left-color: #17a2b8;
+        }
+        
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-size: 16px;
+        }
+        
+        .activity-icon.create {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+        
+        .activity-icon.update {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+        }
+        
+        .activity-icon.delete {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+        
+        .activity-icon.upload {
+            background: rgba(23, 162, 184, 0.1);
+            color: #17a2b8;
+        }
+        
+        .activity-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .activity-description {
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .activity-meta {
+            font-size: 0.875rem;
+            color: #999;
+        }
     </style>
 </head>
 <body>
@@ -690,7 +766,12 @@
                                         </span>
                                     {% elif activity.action == 'update' %}
                                         <span class="badge bg-warning">
-                                            <i class="fas fa-edit me-1"></i>更新
+                                            <i class="fas fa-edit me-1"></i>
+                                            {% if activity.details.update_source == 'admin_backend' %}
+                                                後台編輯
+                                            {% else %}
+                                                編輯
+                                            {% endif %}
                                         </span>
                                     {% elif activity.action == 'delete' %}
                                         <span class="badge bg-danger">
@@ -760,6 +841,17 @@
                                             {% if activity.details.green_bean_name %}
                                                 <span class="text-info">{{ activity.details.green_bean_name }}</span>
                                             {% endif %}
+                                            {% if activity.details.changed_fields %}
+                                                <div class="mt-1">
+                                                    <i class="fas fa-edit me-1"></i>變更欄位: {{ activity.details.changed_fields|length }} 個<br>
+                                                    {% if activity.details.update_source == 'admin_backend' %}
+                                                        <span class="badge bg-warning">管理後台</span>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                            {% if activity.details.creation_source == 'admin_backend' %}
+                                                <span class="badge bg-success">管理後台</span>
+                                            {% endif %}
                                         </small>
                                     {% else %}
                                         <span class="text-muted">-</span>
@@ -788,7 +880,7 @@
                         <div class="col-md-6">
                             <ul class="text-muted">
                                 <li><span class="badge bg-success">新增</span> - 新增生豆入庫記錄</li>
-                                <li><span class="badge bg-warning">更新</span> - 更新生豆入庫記錄</li>
+                                <li><span class="badge bg-warning">編輯</span> - 編輯生豆入庫記錄</li>
                                 <li><span class="badge bg-danger">刪除</span> - 刪除單筆生豆入庫記錄</li>
                                 <li><span class="badge bg-danger">批量刪除</span> - 批量刪除多筆記錄</li>
                             </ul>

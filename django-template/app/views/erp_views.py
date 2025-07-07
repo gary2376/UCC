@@ -881,18 +881,52 @@ def get_user_activities(request):
                 'create': 'fa-plus',
                 'update': 'fa-edit', 
                 'delete': 'fa-trash',
-                'upload': 'fa-upload'
+                'upload': 'fa-upload',
+                'batch_delete': 'fa-trash-alt',
+                'delete_upload_record': 'fa-file-excel'
             }
             
             title_map = {
                 'create': '新增記錄',
                 'update': '編輯記錄',
                 'delete': '刪除記錄', 
-                'upload': '上傳檔案'
+                'upload': '上傳檔案',
+                'batch_delete': '批量刪除',
+                'delete_upload_record': '刪除檔案'
             }
             
             icon = icon_map.get(activity.action, 'fa-info')
             title = title_map.get(activity.action, activity.action.title())
+            
+            # 根據不同的活動類型調整標題
+            if activity.action == 'update' and activity.details:
+                if activity.details.get('update_source') == 'admin_backend':
+                    title = '後台編輯記錄'
+                else:
+                    title = '編輯記錄'
+            elif activity.action == 'delete' and activity.details:
+                if activity.details.get('deletion_source') == 'admin_backend':
+                    title = '後台刪除記錄'
+                else:
+                    title = '刪除記錄'
+            elif activity.action == 'create' and activity.details:
+                if activity.details.get('creation_source') == 'admin_backend':
+                    title = '後台新增記錄'
+                else:
+                    title = '新增記錄'
+            
+            # 生成額外的詳細資訊
+            detail_info = ""
+            if activity.details:
+                if activity.action == 'update' and activity.details.get('changed_fields'):
+                    changed_count = len(activity.details.get('changed_fields', []))
+                    detail_info = f'<div class="text-muted mt-1"><i class="fas fa-edit me-1"></i>變更了 {changed_count} 個欄位</div>'
+                elif activity.action in ['delete', 'batch_delete'] and activity.details.get('records_count'):
+                    count = activity.details.get('records_count', 1)
+                    detail_info = f'<div class="text-muted mt-1"><i class="fas fa-database me-1"></i>刪除了 {count} 筆記錄</div>'
+                elif activity.action == 'upload' and activity.details.get('records_count'):
+                    count = activity.details.get('records_count', 0)
+                    detail_info = f'<div class="text-muted mt-1"><i class="fas fa-database me-1"></i>上傳了 {count} 筆記錄</div>'
             
             activity_html = f'''
             <div class="activity-card {activity.action}">
@@ -903,6 +937,7 @@ def get_user_activities(request):
                     <div class="activity-content">
                         <div class="activity-title">{title}</div>
                         <div class="activity-description">{activity.description or "執行了相關操作"}</div>
+                        {detail_info}
                         <div class="activity-meta">
                             <i class="fas fa-user me-1"></i>
                             {activity.user.get_full_name() or activity.user.username}
