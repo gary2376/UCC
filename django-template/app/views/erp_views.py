@@ -26,7 +26,7 @@ from app.serializers.user_serializer import (
 )
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from app.utils.activity_logger import log_user_activity, get_recent_user_activities, get_important_user_activities
+from app.utils.activity_logger import log_user_activity, get_recent_user_activities, get_important_user_activities, _log_to_django_admin
 from django.db import transaction
 from django.core.files.storage import default_storage
 
@@ -94,8 +94,8 @@ class ERPCleanDashboardView(LoginRequiredMixin, View):
             current_inventory__gt=0
         ).order_by('current_inventory')[:10]
         
-        # 最近的重要用戶活動記錄（只顯示新增、更新、上傳等重要操作）
-        recent_activities = get_important_user_activities(limit=20)
+        # 最近的重要用戶活動記錄（包含所有檔案和資料操作）
+        recent_activities = get_important_user_activities(limit=30)
         
         # 獲取本週記錄統計
         from app.utils.activity_logger import get_weekly_records_comparison
@@ -362,45 +362,31 @@ def green_bean_records_view(request):
         file_type='green_bean'
     ).order_by('-upload_time')[:5]
     
-    # 活動記錄統計
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
+    # 獲取與生豆入庫記錄相關的用戶活動記錄
+    from app.utils.activity_logger import get_important_user_activities
+    from django.contrib.contenttypes.models import ContentType
     
-    # 活動記錄相關數據
-    user_activities = UserActivityLog.objects.filter(
-        content_type__model='greenbeaninboundrecord'
-    ).select_related('user').order_by('-created_at')[:10]
+    # 獲取生豆記錄的 ContentType
+    green_bean_content_type = ContentType.objects.get_for_model(GreenBeanInboundRecord)
     
-    total_activities = UserActivityLog.objects.filter(
-        content_type__model='greenbeaninboundrecord'
-    ).count()
+    # 獲取所有重要活動，並過濾生豆相關的活動
+    all_activities = get_important_user_activities(limit=100)
+    green_bean_activities = []
     
-    # 活動統計
-    activity_stats = {
-        'creates': UserActivityLog.objects.filter(
-            content_type__model='greenbeaninboundrecord', 
-            action='create'
-        ).count(),
-        'updates': UserActivityLog.objects.filter(
-            content_type__model='greenbeaninboundrecord', 
-            action='update'
-        ).count(),
-        'deletes': UserActivityLog.objects.filter(
-            content_type__model='greenbeaninboundrecord', 
-            action='delete'
-        ).count(),
-        'uploads': UserActivityLog.objects.filter(
-            content_type__model='greenbeaninboundrecord', 
-            action='upload'
-        ).count(),
-    }
-    
-    # 獲取所有有活動記錄的使用者
-    activity_users = User.objects.filter(
-        id__in=UserActivityLog.objects.filter(
-            content_type__model='greenbeaninboundrecord'
-        ).values_list('user_id', flat=True).distinct()
-    )
+    for activity in all_activities:
+        # 包含生豆相關的活動：
+        # 1. 直接關聯到 GreenBeanInboundRecord 的活動
+        # 2. 描述中包含生豆相關關鍵字的活動
+        # 3. 檔案上傳活動（可能包含生豆數據）
+        if (activity.content_type == green_bean_content_type or 
+            '生豆入庫記錄' in activity.description or 
+            activity.action in ['upload', 'delete_upload_record'] or
+            (activity.details and any(key in activity.details for key in ['order_number', 'green_bean_name', 'deleted_record']))):
+            green_bean_activities.append(activity)
+        
+        # 限制返回數量
+        if len(green_bean_activities) >= 20:
+            break
     
     context = {
         'page_obj': page_obj,
@@ -408,10 +394,7 @@ def green_bean_records_view(request):
         'abnormal_records': abnormal_records,
         'current_month_records': current_month_records,
         'recent_uploads': recent_uploads,
-        'total_activities': total_activities,
-        'user_activities': user_activities,
-        'activity_stats': activity_stats,
-        'activity_users': activity_users,
+        'green_bean_activities': green_bean_activities,
     }
     
     return render(request, 'erp/green_bean_records.html', context)
@@ -635,6 +618,7 @@ def green_bean_upload_file(request):
                     request.user,
                     'upload',
                     f'上傳生豆入庫記錄檔案: {uploaded_file.name}',
+                    request=request,
                     details={'records_count': len(created_records)}
                 )
                 
@@ -681,12 +665,29 @@ def delete_green_bean_record(request, record_id):
     try:
         record = get_object_or_404(GreenBeanInboundRecord, id=record_id)
         
-        # 記錄刪除活動
+        # 保存記錄資訊用於記錄
+        record_info = {
+            'order_number': record.order_number,
+            'green_bean_name': record.green_bean_name,
+            'green_bean_code': record.green_bean_code,
+            'green_bean_batch_number': record.green_bean_batch_number,
+            'required_weight_kg': float(record.required_weight_kg) if record.required_weight_kg else None,
+            'measured_weight_kg': float(record.measured_weight_kg) if record.measured_weight_kg else None,
+            'execution_status': record.execution_status,
+            'is_abnormal': record.is_abnormal,
+        }
+        
+        # 記錄刪除活動（在刪除前記錄）
         log_user_activity(
             request.user,
             'delete',
             f'刪除生豆入庫記錄: {record.order_number} - {record.green_bean_name}',
-            details={'record_id': str(record_id)}
+            request=request,
+            details={
+                'record_id': str(record_id),
+                'deleted_record': record_info,
+                'deletion_time': datetime.now().isoformat()
+            }
         )
         
         # 刪除記錄
@@ -694,7 +695,7 @@ def delete_green_bean_record(request, record_id):
         
         return JsonResponse({
             'success': True,
-            'message': '記錄已成功刪除'
+            'message': f'記錄 {record_info["order_number"]} 已成功刪除'
         })
         
     except Exception as e:
@@ -726,8 +727,9 @@ def batch_delete_green_bean_records(request):
         # 記錄批量刪除活動
         log_user_activity(
             request.user,
-            'delete',
+            'batch_delete',
             f'批量刪除生豆入庫記錄: {deleted_count} 筆',
+            request=request,
             details={'record_ids': record_ids}
         )
         
@@ -779,7 +781,8 @@ def delete_upload_record(request, upload_id):
                 log_user_activity(
                     request.user,
                     'delete_upload_record',
-                    f'刪除上傳記錄 {upload_record.file_name}，同時刪除了 {deleted_count} 筆相關記錄'
+                    f'刪除上傳記錄 {upload_record.file_name}，同時刪除了 {deleted_count} 筆相關記錄',
+                    request=request
                 )
             
             # 刪除上傳記錄
@@ -943,4 +946,253 @@ def get_user_activities(request):
         return JsonResponse({
             'success': False,
             'message': f'載入活動記錄時發生錯誤: {str(e)}'
+        })
+
+
+@login_required
+def activity_log_view(request):
+    """活動記錄頁面視圖"""
+    # 獲取查詢參數
+    user_filter = request.GET.get('user')
+    action_filter = request.GET.get('action')
+    
+    # 基本查詢 - 使用 select_related 優化查詢
+    activities = UserActivityLog.objects.filter(
+        action__in=['create', 'update', 'upload', 'delete', 'delete_upload_record', 'batch_delete', 'export']
+    ).select_related('user').order_by('-created_at')
+    
+    # 應用過濾器
+    if user_filter:
+        activities = activities.filter(user__username__icontains=user_filter)
+    
+    if action_filter:
+        activities = activities.filter(action=action_filter)
+    
+    # 分頁處理
+    paginator = Paginator(activities, 50)  # 每頁50條記錄
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # 獲取所有操作類型用於篩選
+    action_choices = [
+        ('create', '新增'),
+        ('update', '更新'),
+        ('delete', '刪除'),
+        ('batch_delete', '批量刪除'),
+        ('upload', '上傳'),
+        ('delete_upload_record', '刪除上傳記錄'),
+        ('export', '匯出'),
+    ]
+    
+    context = {
+        'activities': page_obj,
+        'page_obj': page_obj,
+        'action_choices': action_choices,
+        'current_user_filter': user_filter,
+        'current_action_filter': action_filter,
+    }
+    
+    return render(request, 'erp/activity_log.html', context)
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def add_green_bean_record(request):
+    """手動新增生豆入庫記錄"""
+    try:
+        # 獲取表單資料 - 基本資訊
+        order_number = request.POST.get('order_number', '').strip()
+        roasting_sequence = request.POST.get('roasting_sequence', '').strip()
+        bean_sequence = request.POST.get('bean_sequence', '').strip()
+        wave = request.POST.get('wave', '').strip()
+        execution_status = request.POST.get('execution_status', '').strip()
+        record_date = request.POST.get('record_date')
+        
+        # 生豆資訊
+        bean_batch = request.POST.get('bean_batch', '').strip()
+        bean_type = request.POST.get('bean_type', '').strip()
+        bean_name = request.POST.get('bean_name', '').strip()
+        bean_inbound_description = request.POST.get('bean_inbound_description', '').strip()
+        
+        # 重量與數量
+        bag_weight = request.POST.get('bag_weight')
+        bag_count = request.POST.get('bag_count')
+        request_weight = request.POST.get('request_weight')
+        actual_weight = request.POST.get('actual_weight')
+        
+        # 狀態與備註
+        status = request.POST.get('status', '').strip()
+        remarks = request.POST.get('remarks', '').strip()
+        
+        # 驗證必填欄位
+        required_fields = [order_number, roasting_sequence, bean_sequence, wave, execution_status, 
+                          bean_batch, bean_type, bean_name, bag_weight, bag_count, 
+                          request_weight, actual_weight, record_date, status]
+        
+        if not all(field for field in required_fields if field != ''):
+            return JsonResponse({'success': False, 'message': '請填寫所有必填欄位'})
+        
+        # 轉換數據類型
+        try:
+            roasting_sequence = int(roasting_sequence)
+            bean_sequence = int(bean_sequence)
+            wave = int(wave)
+            bag_weight = float(bag_weight)
+            bag_count = int(bag_count)
+            request_weight = float(request_weight)
+            actual_weight = float(actual_weight)
+            record_date = datetime.strptime(record_date, '%Y-%m-%dT%H:%M')
+        except (ValueError, TypeError) as e:
+            return JsonResponse({'success': False, 'message': '資料格式錯誤，請檢查數值和時間格式'})
+        
+        # 驗證數值
+        if bag_weight <= 0 or bag_count <= 0 or request_weight <= 0 or actual_weight <= 0:
+            return JsonResponse({'success': False, 'message': '重量和數量必須大於0'})
+        
+        if roasting_sequence <= 0 or bean_sequence <= 0 or wave <= 0:
+            return JsonResponse({'success': False, 'message': '項次和波次必須大於0'})
+        
+        # 檢查訂單編號是否已存在
+        existing_record = GreenBeanInboundRecord.objects.filter(order_number=order_number).first()
+        if existing_record:
+            return JsonResponse({'success': False, 'message': f'訂單編號 {order_number} 已存在，請使用不同的訂單編號'})
+        
+        # 設定狀態對應
+        is_abnormal = (status == '異常')
+        
+        # 建立新記錄
+        new_record = GreenBeanInboundRecord.objects.create(
+            # 基本資訊
+            order_number=order_number,
+            roasted_item_sequence=roasting_sequence,
+            green_bean_item_sequence=bean_sequence,
+            batch_sequence=wave,
+            execution_status=execution_status,
+            record_time=record_date,
+            is_abnormal=is_abnormal,
+            
+            # 生豆資訊
+            green_bean_batch_number=bean_batch,
+            green_bean_code=bean_type,
+            green_bean_name=bean_name,
+            green_bean_storage_silo=bean_inbound_description,  # 使用筒倉欄位存儲簡含
+            
+            # 重量和數量
+            bag_weight_kg=bag_weight,
+            input_bag_count=bag_count,
+            required_weight_kg=request_weight,
+            measured_weight_kg=actual_weight,
+            
+            # 備註
+            remark=remarks
+        )
+        
+        # 記錄用戶活動
+        log_user_activity(
+            request.user,
+            'create',
+            f'手動新增生豆入庫記錄: {order_number}',
+            content_object=new_record,
+            request=request,
+            details={
+                'order_number': order_number,
+                'roasted_item_sequence': roasting_sequence,
+                'green_bean_item_sequence': bean_sequence,
+                'batch_sequence': wave,
+                'execution_status': execution_status,
+                'green_bean_name': bean_name,
+                'green_bean_code': bean_type,
+                'green_bean_batch_number': bean_batch,
+                'bag_weight_kg': float(bag_weight),
+                'input_bag_count': bag_count,
+                'required_weight_kg': float(request_weight),
+                'measured_weight_kg': float(actual_weight),
+                'status': status
+            }
+        )
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'成功新增生豆入庫記錄 {order_number}',
+            'record_id': str(new_record.id)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'message': f'新增記錄時發生錯誤: {str(e)}'
+        })
+
+
+@login_required
+@csrf_exempt
+@require_http_methods(["POST"])
+def add_activity_record(request):
+    """手動新增活動記錄"""
+    try:
+        action = request.POST.get('action')
+        description = request.POST.get('description')
+        record_time = request.POST.get('record_time')
+        ip_address = request.POST.get('ip_address')
+        details = request.POST.get('details')
+        
+        # 驗證必填欄位
+        if not action or not description:
+            return JsonResponse({'success': False, 'message': '請填寫操作類型和操作描述'})
+        
+        # 轉換時間格式（如果提供的話）
+        record_datetime = None
+        if record_time:
+            try:
+                from datetime import datetime
+                record_datetime = datetime.strptime(record_time, '%Y-%m-%dT%H:%M')
+            except (ValueError, TypeError) as e:
+                return JsonResponse({'success': False, 'message': '時間格式錯誤'})
+        
+        # 處理詳細資訊（JSON）
+        details_dict = {}
+        if details and details.strip():
+            try:
+                import json
+                details_dict = json.loads(details)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'message': '詳細資訊必須是有效的JSON格式'})
+        
+        # 如果沒有提供IP地址，從請求中獲取
+        if not ip_address:
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR')
+        
+        # 建立新的活動記錄（created_at 會自動設定為當前時間）
+        activity_record = UserActivityLog.objects.create(
+            user=request.user,
+            action=action,
+            description=description,
+            ip_address=ip_address,
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            details=details_dict
+        )
+        
+        # 如果用戶設定了特定時間，我們手動更新
+        if record_datetime:
+            activity_record.created_at = record_datetime
+            activity_record.save(update_fields=['created_at'])
+        
+        # 同時記錄到 Django 管理員日誌系統
+        _log_to_django_admin(request.user, action, description)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'成功新增活動記錄: {description}',
+            'record_id': str(activity_record.id)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'新增記錄時發生錯誤: {str(e)}'
         })

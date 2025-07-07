@@ -10,12 +10,14 @@ from app.views.erp_views import (
     production_statistics_api,
     green_bean_records_view,
     green_bean_upload_file,
+    add_green_bean_record,
     delete_green_bean_record,
     batch_delete_green_bean_records,
     test_return_view,
     delete_upload_record,
     get_upload_records,
-    get_user_activities
+    activity_log_view,
+    add_activity_record
 )
 from app.views.permission_views import (
     permission_management_view,
@@ -41,12 +43,14 @@ urlpatterns = [
     
     # 生豆入庫記錄頁面
     path('green-bean-records/', green_bean_records_view, name='green_bean_records'),
+    path('green-bean-records/add/', add_green_bean_record, name='add_green_bean_record'),
     path('green-bean-records/upload/', green_bean_upload_file, name='green_bean_upload_file'),
     path('green-bean-records/delete/<uuid:record_id>/', delete_green_bean_record, name='delete_green_bean_record'),
     path('green-bean-records/batch-delete/', batch_delete_green_bean_records, name='batch_delete_green_bean_records'),
     path('green-bean-records/upload/delete/<uuid:upload_id>/', delete_upload_record, name='delete_upload_record'),
     path('green-bean-records/uploads/', get_upload_records, name='get_upload_records'),
-    path('green-bean-records/activities/', get_user_activities, name='get_user_activities'),
+    path('activity-log/', activity_log_view, name='activity_log'),
+    path('activity-log/add/', add_activity_record, name='add_activity_record'),
     path('test-return/', test_return_view, name='test_return'),
     
     # 權限管理功能

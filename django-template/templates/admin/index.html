@@ -39,7 +39,45 @@ a[href^="/erp/"]:hover {
 }
 </style>
 
-{{ block.super }}
+<!-- 自定義最近動作區塊 -->
+<div style="margin-top: 20px; display: flex; gap: 20px;">
+    <div style="flex: 1; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); overflow: hidden;">
+        <div style="background: #f8f9fa; padding: 15px; border-bottom: 1px solid #dee2e6;">
+            <h3 style="margin: 0; font-size: 18px; font-weight: 600;">
+                <i class="fas fa-history"></i> 最近的用戶活動
+            </h3>
+        </div>
+        <div style="padding: 15px;">
+            {% load erp_tags %}
+            {% get_recent_activities as recent_activities %}
+            {% if recent_activities %}
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {% for activity in recent_activities %}
+                    <div style="padding: 10px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: bold; color: #333;">{{ activity.user.username }}</div>
+                            <div style="font-size: 14px; color: #666; margin-top: 4px;">{{ activity.description }}</div>
+                        </div>
+                        <div style="background: #007bff; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px;">
+                            {{ activity.created_at|date:"m/d H:i" }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div style="margin-top: 15px;">
+                    <a href="/erp/activity-log/" style="background: #007bff; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: 14px;">
+                        <i class="fas fa-external-link-alt"></i> 查看所有活動記錄
+                    </a>
+                </div>
+            {% else %}
+                <p style="color: #666; text-align: center; margin: 40px 0;">暫無最近的活動記錄</p>
+            {% endif %}
+        </div>
+    </div>
+    <div style="flex: 1;">
+        {{ block.super }}
+    </div>
+</div>
 {% endblock %}
 
 {% block head %}
@@ -94,5 +132,13 @@ a[href^="/erp/"]:hover {
     {# 替換左邊選單的首頁圖示 #}
     {# 放在 script 會閃爍，不過放在 base_script 不會 #}
     menus[0].icon = 'far fa-home'
+    
+    // 修改首頁連結 - 使用延遲執行確保生效
+    setTimeout(function() {
+      if (typeof menus !== 'undefined' && menus && menus[0]) {
+        menus[0].url = '/admin/';
+        menus[0].name = '首頁';
+      }
+    }, 100);
   </script>
 {% endblock %}

@@ -260,6 +260,8 @@ class UserActivityLog(models.Model):
         ('update', '更新'),
         ('delete', '刪除'),
         ('upload', '上傳'),
+        ('delete_upload_record', '刪除上傳記錄'),
+        ('batch_delete', '批量刪除'),
         ('export', '匯出'),
         ('login', '登入'),
         ('logout', '登出'),

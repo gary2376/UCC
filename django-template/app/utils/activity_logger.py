@@ -4,6 +4,7 @@
 用戶活動記錄工具
 """
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from app.models.models import UserActivityLog
 
 
@@ -47,9 +48,61 @@ def log_user_activity(user, action, description, content_object=None, request=No
         # 創建活動記錄
         UserActivityLog.objects.create(**activity_data)
         
+        # 同時記錄到 Django 的管理員日誌系統
+        _log_to_django_admin(user, action, description, content_object)
+        
     except Exception as e:
         # 記錄錯誤但不影響主要業務流程
         print(f"記錄用戶活動失敗: {e}")
+
+
+def _log_to_django_admin(user, action, description, content_object=None):
+    """
+    記錄操作到 Django 管理員日誌系統
+    
+    Args:
+        user: 用戶對象
+        action: 操作類型
+        description: 操作描述
+        content_object: 相關的對象（可選）
+    """
+    try:
+        # 將我們的動作類型映射到 Django 的日誌動作
+        action_flag_map = {
+            'create': ADDITION,
+            'update': CHANGE,
+            'delete': DELETION,
+            'upload': ADDITION,  # 上傳視為新增
+            'export': CHANGE,    # 匯出視為變更
+            'batch_delete': DELETION,
+            'delete_upload_record': DELETION,
+        }
+        
+        action_flag = action_flag_map.get(action, CHANGE)  # 預設為變更
+        
+        # 如果有相關對象，記錄到該對象的日誌
+        if content_object:
+            LogEntry.objects.log_action(
+                user_id=user.pk,
+                content_type_id=ContentType.objects.get_for_model(content_object).pk,
+                object_id=content_object.pk,
+                object_repr=str(content_object),
+                action_flag=action_flag,
+                change_message=description
+            )
+        else:
+            # 如果沒有相關對象，記錄到 UserActivityLog 模型
+            LogEntry.objects.log_action(
+                user_id=user.pk,
+                content_type_id=ContentType.objects.get_for_model(UserActivityLog).pk,
+                object_id=None,
+                object_repr=f"系統操作: {description}",
+                action_flag=action_flag,
+                change_message=description
+            )
+    except Exception as e:
+        # 記錄錯誤但不影響主要業務流程
+        print(f"記錄到管理員日誌失敗: {e}")
 
 
 def get_recent_user_activities(user=None, limit=50, exclude_actions=None):
@@ -64,7 +117,7 @@ def get_recent_user_activities(user=None, limit=50, exclude_actions=None):
     Returns:
         QuerySet: 用戶活動記錄
     """
-    queryset = UserActivityLog.objects.all()
+    queryset = UserActivityLog.objects.all().select_related('user').order_by('-created_at')
     
     if user:
         queryset = queryset.filter(user=user)
@@ -107,7 +160,7 @@ def get_user_activity_summary(days=30):
 
 def get_important_user_activities(user=None, limit=50):
     """
-    獲取重要的用戶活動記錄（只包含 create, update, upload, delete 等操作）
+    獲取重要的用戶活動記錄（包含所有檔案和資料操作）
     
     Args:
         user: 特定用戶（可選），如果不指定則返回所有用戶的活動
@@ -116,10 +169,10 @@ def get_important_user_activities(user=None, limit=50):
     Returns:
         QuerySet: 重要的用戶活動記錄
     """
-    # 定義重要操作類型
-    important_actions = ['create', 'update', 'upload', 'delete', 'export']
+    # 定義重要操作類型 - 包含所有檔案和資料操作
+    important_actions = ['create', 'update', 'upload', 'delete', 'delete_upload_record', 'batch_delete', 'export']
     
-    queryset = UserActivityLog.objects.filter(action__in=important_actions)
+    queryset = UserActivityLog.objects.filter(action__in=important_actions).select_related('user')
     
     if user:
         queryset = queryset.filter(user=user)
@@ -171,8 +224,8 @@ def get_weekly_records_comparison():
     # 計算上個月有多少週（大約）
     last_month_weeks = last_month_days / 7
     
-    # 定義重要操作類型
-    important_actions = ['create', 'update', 'upload', 'delete', 'export']
+    # 定義重要操作類型 - 包含所有檔案和資料操作
+    important_actions = ['create', 'update', 'upload', 'delete', 'delete_upload_record', 'batch_delete', 'export']
     
     try:
         # 計算本週的記錄數

@@ -2,8 +2,10 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.utils.translation import gettext_lazy as _
+from datetime import datetime
 
 from app.models import AdminUser, User, GreenBeanInboundRecord, RawMaterialWarehouseRecord, RawMaterialMonthlySummary, FileUploadRecord, UploadRecordRelation
+from app.utils.activity_logger import log_user_activity
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -156,6 +158,72 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
             return HttpResponseRedirect('/erp/green-bean-records/')
         
         return super().response_delete(request, obj_display, obj_id)
+    
+    def delete_model(self, request, obj):
+        """重寫刪除模型方法以記錄活動"""
+        # 保存記錄資訊用於記錄
+        record_info = {
+            'order_number': obj.order_number,
+            'green_bean_name': obj.green_bean_name,
+            'green_bean_code': obj.green_bean_code,
+            'green_bean_batch_number': obj.green_bean_batch_number,
+            'required_weight_kg': float(obj.required_weight_kg) if obj.required_weight_kg else None,
+            'measured_weight_kg': float(obj.measured_weight_kg) if obj.measured_weight_kg else None,
+            'execution_status': obj.execution_status,
+            'is_abnormal': obj.is_abnormal,
+        }
+        
+        # 記錄刪除活動（在刪除前記錄）
+        log_user_activity(
+            request.user,
+            'delete',
+            f'從管理後台刪除生豆入庫記錄: {obj.order_number} - {obj.green_bean_name}',
+            content_object=obj,
+            request=request,
+            details={
+                'record_id': str(obj.id),
+                'deleted_record': record_info,
+                'deletion_time': datetime.now().isoformat(),
+                'deletion_source': 'admin_backend'
+            }
+        )
+        
+        # 執行刪除
+        super().delete_model(request, obj)
+    
+    def delete_queryset(self, request, queryset):
+        """重寫批量刪除方法以記錄活動"""
+        # 記錄所有要被刪除的記錄
+        deleted_records = []
+        for obj in queryset:
+            record_info = {
+                'order_number': obj.order_number,
+                'green_bean_name': obj.green_bean_name,
+                'green_bean_code': obj.green_bean_code,
+                'green_bean_batch_number': obj.green_bean_batch_number,
+                'required_weight_kg': float(obj.required_weight_kg) if obj.required_weight_kg else None,
+                'measured_weight_kg': float(obj.measured_weight_kg) if obj.measured_weight_kg else None,
+                'execution_status': obj.execution_status,
+                'is_abnormal': obj.is_abnormal,
+            }
+            deleted_records.append(record_info)
+        
+        # 記錄批量刪除活動
+        log_user_activity(
+            request.user,
+            'batch_delete',
+            f'從管理後台批量刪除 {len(deleted_records)} 筆生豆入庫記錄',
+            request=request,
+            details={
+                'records_count': len(deleted_records),
+                'deleted_records': deleted_records,
+                'deletion_time': datetime.now().isoformat(),
+                'deletion_source': 'admin_backend'
+            }
+        )
+        
+        # 執行批量刪除
+        super().delete_queryset(request, queryset)
 
 
 @admin.register(RawMaterialWarehouseRecord)

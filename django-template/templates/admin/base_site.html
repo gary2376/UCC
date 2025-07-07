@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Django administration') }}</a></h1>
+{% endblock %}
+
+{% block nav-global %}{% endblock %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <style>
+    /* 確保側邊欄首頁按鈕正確顯示 */
+    .sidebar-menu .menu-item:first-child .menu-link {
+      color: inherit;
+      text-decoration: none;
+    }
+  </style>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script>
+    // 確保首頁按鈕正確工作
+    document.addEventListener('DOMContentLoaded', function() {
+      // 等待一段時間讓 SimpleUI 的腳本執行完畢
+      setTimeout(function() {
+        if (typeof menus !== 'undefined' && menus && menus[0]) {
+          menus[0].url = '/admin/';
+          menus[0].name = '首頁';
+        }
+      }, 500);
+    });
+  </script>
+{% endblock %}
