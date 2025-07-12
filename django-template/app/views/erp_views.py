@@ -388,6 +388,10 @@ def green_bean_records_view(request):
         if len(green_bean_activities) >= 20:
             break
     
+    # 獲取生豆名稱列表
+    from app.utils.green_bean_utils import get_green_bean_names
+    green_bean_names = get_green_bean_names()
+    
     context = {
         'page_obj': page_obj,
         'total_records': total_records,
@@ -395,6 +399,7 @@ def green_bean_records_view(request):
         'current_month_records': current_month_records,
         'recent_uploads': recent_uploads,
         'green_bean_activities': green_bean_activities,
+        'green_bean_names': green_bean_names,
     }
     
     return render(request, 'erp/green_bean_records.html', context)
@@ -1056,7 +1061,7 @@ def add_green_bean_record(request):
                           request_weight, actual_weight, record_date, status]
         
         if not all(field for field in required_fields if field != ''):
-            return JsonResponse({'success': False, 'message': '請填寫所有必填欄位'})
+            return JsonResponse({'success': False, 'message': '請填写所有必填欄位'})
         
         # 轉換數據類型
         try:
@@ -1221,3 +1226,24 @@ def add_activity_record(request):
             'success': False,
             'message': f'新增記錄時發生錯誤: {str(e)}'
         })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def green_bean_names_api(request):
+    """獲取生豆名稱列表API"""
+    try:
+        from app.utils.green_bean_utils import get_green_bean_names
+        green_bean_names = get_green_bean_names()
+        
+        return Response({
+            'success': True,
+            'data': green_bean_names,
+            'count': len(green_bean_names)
+        })
+        
+    except Exception as e:
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

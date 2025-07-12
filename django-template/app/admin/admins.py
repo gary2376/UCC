@@ -2,10 +2,41 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from django.utils.translation import gettext_lazy as _
+from django import forms
 from datetime import datetime
 
 from app.models import AdminUser, User, GreenBeanInboundRecord, RawMaterialWarehouseRecord, RawMaterialMonthlySummary, FileUploadRecord, UploadRecordRelation
 from app.utils.activity_logger import log_user_activity
+from app.utils.green_bean_utils import get_green_bean_names
+
+
+class GreenBeanInboundRecordForm(forms.ModelForm):
+    """自定義生豆入庫記錄表單"""
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # 確保 green_bean_name 欄位存在
+        if 'green_bean_name' in self.fields:
+            # 獲取生豆名稱選項
+            green_bean_names_list = get_green_bean_names()
+            green_bean_choices = [('', '請選擇生豆名稱')] + [(name, name) for name in green_bean_names_list]
+            
+            # 設置欄位為 ChoiceField 而不是修改 widget
+            self.fields['green_bean_name'] = forms.ChoiceField(
+                choices=green_bean_choices,
+                required=False,
+                label='生豆名稱',
+                help_text=f'共有 {len(green_bean_names_list)} 個生豆名稱可選擇',
+                widget=forms.Select(attrs={
+                    'class': 'form-control',
+                    'style': 'width: 100%;'
+                })
+            )
+        
+    class Meta:
+        model = GreenBeanInboundRecord
+        fields = '__all__'
 
 
 class CustomUserCreationForm(UserCreationForm):
@@ -69,6 +100,8 @@ class AdminUserAdmin(admin.ModelAdmin):
 
 @admin.register(GreenBeanInboundRecord)
 class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
+    form = GreenBeanInboundRecordForm  # 使用自定義表單
+    
     list_display = [
         'order_number', 'green_bean_name', 'green_bean_code', 
         'required_weight_kg', 'measured_weight_kg', 'record_time', 'is_abnormal'
@@ -84,19 +117,22 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
     readonly_fields = ['id', 'created_at', 'updated_at']
     date_hierarchy = 'record_time'
     
-    # 隱藏新增按鈕
+    # 允許修改和新增
     def has_add_permission(self, request):
-        """禁用新增功能"""
-        return False
+        """允許新增功能"""
+        return True
     
-    def changelist_view(self, request, extra_context=None):
-        """重定向列表頁面到自定義頁面"""
-        from django.http import HttpResponseRedirect
-        return HttpResponseRedirect('/erp/green-bean-records/')
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """自定義編輯視圖，隱藏「儲存並繼續新增」按鈕"""
+        extra_context = extra_context or {}
+        extra_context['show_save_and_add_another'] = False
+        return super().change_view(request, object_id, form_url, extra_context)
     
-    def has_module_permission(self, request):
-        """隱藏admin模組"""
-        return False
+    def add_view(self, request, form_url='', extra_context=None):
+        """自定義新增視圖，隱藏「儲存並繼續新增」按鈕"""
+        extra_context = extra_context or {}
+        extra_context['show_save_and_add_another'] = False
+        return super().add_view(request, form_url, extra_context)
     
     fieldsets = (
         ('基本資訊', {
@@ -132,32 +168,7 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
         })
     )
     
-    def response_change(self, request, obj):
-        """自定義編輯後的返回行為"""
-        # 如果來自我們的自定義頁面，直接返回
-        if 'from_green_bean_records' in request.GET:
-            from django.http import HttpResponseRedirect
-            return HttpResponseRedirect('/erp/green-bean-records/')
-        
-        return super().response_change(request, obj)
-    
-    def response_add(self, request, obj, post_url_continue=None):
-        """自定義新增後的返回行為"""
-        # 如果來自我們的自定義頁面，直接返回
-        if 'from_green_bean_records' in request.GET:
-            from django.http import HttpResponseRedirect
-            return HttpResponseRedirect('/erp/green-bean-records/')
-        
-        return super().response_add(request, obj, post_url_continue)
-    
-    def response_delete(self, request, obj_display, obj_id):
-        """自定義刪除後的返回行為"""
-        # 如果來自我們的自定義頁面，直接返回
-        if 'from_green_bean_records' in request.GET:
-            from django.http import HttpResponseRedirect
-            return HttpResponseRedirect('/erp/green-bean-records/')
-        
-        return super().response_delete(request, obj_display, obj_id)
+    # 移除自定義返回邏輯，使用標準 Django Admin 行為
     
     def save_model(self, request, obj, form, change):
         """重寫保存模型方法以記錄活動"""

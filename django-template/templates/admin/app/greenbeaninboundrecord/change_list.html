@@ -28,11 +28,7 @@
 {% endblock %}
 
 {% block content_title %}
-<div class="custom-return-section">
-    <a href="/erp/green-bean-records/" class="custom-return-btn">
-        <i class="fas fa-arrow-left"></i> 返回生豆入庫記錄
-    </a>
-</div>
+{# 移除自定義返回按鈕，使用標準 Django Admin 導航 #}
 {{ block.super }}
 {% endblock %}
 

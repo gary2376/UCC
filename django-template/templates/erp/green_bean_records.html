@@ -1309,7 +1309,20 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="beanName" class="form-label">生豆名稱 <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="beanName" name="bean_name" required>
+                                        <div class="input-group">
+                                            <select class="form-select" id="beanName" name="bean_name" required>
+                                                <option value="">請選擇生豆名稱</option>
+                                                {% for bean_name in green_bean_names %}
+                                                <option value="{{ bean_name }}">{{ bean_name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                            <button class="btn btn-outline-secondary" type="button" id="refreshBeanNames" title="刷新生豆名稱列表">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text text-muted">
+                                            <small><i class="fas fa-info-circle"></i> 生豆名稱來源於Excel檔案，點擊刷新按鈕可更新列表</small>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
@@ -1526,6 +1539,63 @@
 
             return isValid;
         }
+
+        // 刷新生豆名稱列表
+        function refreshBeanNames() {
+            const refreshBtn = document.getElementById('refreshBeanNames');
+            const beanNameSelect = document.getElementById('beanName');
+            const currentValue = beanNameSelect.value;
+            
+            // 顯示載入狀態
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            fetch('/erp/api/green-bean-names/', {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // 清空現有選項
+                    beanNameSelect.innerHTML = '<option value="">請選擇生豆名稱</option>';
+                    
+                    // 添加新選項
+                    data.data.forEach(beanName => {
+                        const option = document.createElement('option');
+                        option.value = beanName;
+                        option.textContent = beanName;
+                        if (beanName === currentValue) {
+                            option.selected = true;
+                        }
+                        beanNameSelect.appendChild(option);
+                    });
+                    
+                    showAlert('success', `成功更新生豆名稱列表，共 ${data.count} 個選項`);
+                } else {
+                    showAlert('error', '更新生豆名稱列表失敗：' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', '更新生豆名稱列表時發生錯誤，請稍後再試');
+            })
+            .finally(() => {
+                // 恢復按鈕狀態
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            });
+        }
+
+        // 綁定刷新按鈕事件
+        document.addEventListener('DOMContentLoaded', function() {
+            const refreshBtn = document.getElementById('refreshBeanNames');
+            if (refreshBtn) {
+                refreshBtn.addEventListener('click', refreshBeanNames);
+            }
+        });
     </script>
 </body>
 </html>

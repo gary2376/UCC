@@ -285,7 +285,7 @@ SIMPLEUI_CONFIG = {
                 {
                     'name': '生豆入庫記錄',
                     'icon': 'fas fa-coffee',
-                    'url': '/erp/green-bean-records/',
+                    'url': '/admin/app/greenbeaninboundrecord/',
                 },
                 {
                     'name': '原料倉管理',

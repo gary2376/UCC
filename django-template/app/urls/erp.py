@@ -5,6 +5,7 @@ from app.views.erp_views import (
     ERPDashboardView,
     ERPCleanDashboardView,
     green_bean_records_api,
+    green_bean_names_api,
     raw_material_records_api,
     inventory_statistics_api,
     production_statistics_api,
@@ -36,6 +37,7 @@ urlpatterns = [
 
     # 資料 API
     path('api/green-bean-records/', green_bean_records_api, name='green_bean_records_api'),
+    path('api/green-bean-names/', green_bean_names_api, name='green_bean_names_api'),
     path('api/raw-material-records/', raw_material_records_api, name='raw_material_records_api'),
     path('api/inventory-statistics/', inventory_statistics_api, name='inventory_statistics_api'),
     path('api/production-statistics/', production_statistics_api, name='production_statistics_api'),
