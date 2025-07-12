@@ -1,40 +1,95 @@
 {% extends 'admin/login.html' %}
 {% load i18n static simpletags %}
+
 {% block head %}
     {{ block.super }}
-    {# You can add code here. #}
     <link rel="stylesheet" href="{% static 'admin/fontawesome/css/all.min.css' %}">
     <style>
       .header {
         color: #333333 !important;
         font-weight: 500 !important;
       }
+      /* 確保表單正常顯示 */
+      .simpleui-form .form-row {
+        margin-bottom: 15px;
+      }
+      .errorlist {
+        color: #d63384;
+        list-style: none;
+        padding: 0;
+        margin: 5px 0;
+      }
+      .errorlist li {
+        font-size: 0.875em;
+      }
     </style>
 {% endblock %}
+
 {% block form %}
     <form class="simpleui-form" action="{{ app_path }}" method="post" id="login-form">
         {% csrf_token %}
+        
+        {% if form.errors %}
+            <div class="alert alert-danger">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div>{{ error }}</div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div>{{ error }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
         <div class="simpleui-input-inline">
             <el-input prefix-icon="fas fa-user" v-model="username" name="username"
-                      placeholder="{% trans 'username' %}" autofocus></el-input>
+                      placeholder="{% trans 'username' %}" autofocus
+                      value="{{ form.username.value|default:'' }}"></el-input>
         </div>
+        
         <div class="simpleui-input-inline">
             <el-input prefix-icon="fas fa-lock" type="password" v-model="password" name="password"
                       @keyup.enter.native="login()"
                       placeholder="{% trans 'password' %}" show-password></el-input>
         </div>
-         <div class="simpleui-input-inline login-btn">
+        
+        <div class="simpleui-input-inline login-btn">
             <el-button :icon="loading?'el-icon-loading':''" @click="login()"
                        type="primary">{% trans 'Log in' %}</el-button>
         </div>
+        
         {% url 'admin_password_reset' as password_reset_url %}
-          {% if password_reset_url %}
-
-         <div class="password-reset-link" style="text-align: center">
-            <a class="forgot-password" href="{{ password_reset_url }}" style="color: rgb(51 51 51 / 50%)">{% trans 'Forgotten your password or username?' %}</a>
-          </div>
-          {% endif %}
+        {% if password_reset_url %}
+            <div class="password-reset-link" style="text-align: center; margin-top: 15px;">
+                <a class="forgot-password" href="{{ password_reset_url }}" 
+                   style="color: rgb(51 51 51 / 50%); text-decoration: none;">
+                   {% trans 'Forgotten your password or username?' %}
+                </a>
+            </div>
+        {% endif %}
 
         <input type="hidden" name="next" value="{{ next }}"/>
     </form>
+    
+    <script>
+        // 確保 Vue 數據綁定正常工作
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果 SimpleUI 的 Vue 實例還沒有準備好，添加備用登入處理
+            setTimeout(function() {
+                const form = document.getElementById('login-form');
+                const usernameInput = form.querySelector('input[name="username"]');
+                const passwordInput = form.querySelector('input[name="password"]');
+                
+                // 確保輸入框可以正常工作
+                if (usernameInput && passwordInput) {
+                    passwordInput.addEventListener('keyup', function(e) {
+                        if (e.key === 'Enter') {
+                            form.submit();
+                        }
+                    });
+                }
+            }, 500);
+        });
+    </script>
 {% endblock %}

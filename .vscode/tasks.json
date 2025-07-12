@@ -6,13 +6,16 @@
 			"type": "shell",
 			"command": "python",
 			"args": [
-				"manage.py",
+				"django-template/manage.py",
 				"runserver",
 				"127.0.0.1:8000"
 			],
 			"group": "build",
 			"isBackground": true,
-			"problemMatcher": []
+			"problemMatcher": [],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			}
 		}
 	]
 }
