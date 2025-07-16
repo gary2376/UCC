@@ -19,13 +19,7 @@ from app.views.erp_views import (
     activity_log_view,
     add_activity_record
 )
-from app.views.permission_views import (
-    permission_management_view,
-    user_permissions_view,
-    update_user_permissions,
-    batch_update_permissions,
-    get_user_permissions_api
-)
+
 
 app_name = 'erp'
 
@@ -52,11 +46,4 @@ urlpatterns = [
     path('green-bean-records/uploads/', get_upload_records, name='get_upload_records'),
     path('activity-log/', activity_log_view, name='activity_log'),
     path('activity-log/add/', add_activity_record, name='add_activity_record'),
-    
-    # 權限管理功能
-    path('permissions/', permission_management_view, name='permission_management'),
-    path('permissions/user/<uuid:user_id>/', user_permissions_view, name='user_permissions'),
-    path('permissions/user/<uuid:user_id>/update/', update_user_permissions, name='update_user_permissions'),
-    path('permissions/user/<uuid:user_id>/api/', get_user_permissions_api, name='get_user_permissions_api'),
-    path('permissions/batch-update/', batch_update_permissions, name='batch_update_permissions'),
 ]
