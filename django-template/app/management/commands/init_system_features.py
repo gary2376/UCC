@@ -6,57 +6,37 @@ class Command(BaseCommand):
     help = '初始化系統基本功能'
 
     def handle(self, *args, **options):
-        # 基本功能列表
+        # 基本功能列表 - 根據需求調整為6個主要功能
         features = [
             {
-                'code': 'file_upload',
-                'name': '檔案上傳',
-                'description': '上傳Excel文件和其他文檔'
-            },
-            {
-                'code': 'upload_history',
-                'name': '上傳歷史',
-                'description': '查看和管理檔案上傳記錄'
-            },
-            {
-                'code': 'green_bean_management',
-                'name': '生豆管理',
-                'description': '管理生豆入庫記錄'
+                'code': 'green_bean_records',
+                'name': '生豆入庫記錄',
+                'description': '管理生豆入庫記錄，包括查看、新增、編輯和刪除記錄'
             },
             {
                 'code': 'raw_material_management',
                 'name': '原料倉管理',
-                'description': '管理原料倉進出記錄'
+                'description': '管理原料倉進出記錄和庫存狀況'
             },
             {
                 'code': 'monthly_statistics',
                 'name': '月度統計',
-                'description': '查看月度統計報表'
+                'description': '查看和分析月度統計報表'
             },
             {
-                'code': 'user_management',
-                'name': '用戶管理',
-                'description': '管理系統用戶帳戶'
+                'code': 'system_users',
+                'name': '系統用戶',
+                'description': '管理系統用戶帳戶和基本資訊'
+            },
+            {
+                'code': 'admin_management',
+                'name': '管理員',
+                'description': '系統管理員功能和高級設定'
             },
             {
                 'code': 'permission_management',
                 'name': '權限管理',
-                'description': '管理用戶權限設定'
-            },
-            {
-                'code': 'system_settings',
-                'name': '系統設定',
-                'description': '系統基本設定和配置'
-            },
-            {
-                'code': 'data_export',
-                'name': '資料匯出',
-                'description': '匯出各種報表和資料'
-            },
-            {
-                'code': 'data_import',
-                'name': '資料匯入',
-                'description': '批量匯入資料到系統'
+                'description': '管理用戶權限設定和功能授權'
             }
         ]
 

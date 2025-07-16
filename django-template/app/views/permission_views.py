@@ -59,7 +59,7 @@ def permission_management_view(request):
         'total_permissions': total_permissions,
     }
     
-    return render(request, 'permission_management_clean.html', context)
+    return render(request, 'erp/permission_management_clean.html', context)
 
 
 @login_required
@@ -103,7 +103,7 @@ def update_user_permissions(request, user_id):
             
             # 添加新權限
             for feature_code, permission_type in permissions_data.items():
-                if permission_type in ['view', 'edit']:
+                if permission_type == 'edit':  # 只允許編輯權限
                     try:
                         feature = SystemFeature.objects.get(code=feature_code)
                         FeaturePermission.objects.create(
@@ -148,7 +148,7 @@ def batch_update_permissions(request):
                     
                     # 添加新權限
                     for feature_code, permission_type in permissions_data.items():
-                        if permission_type in ['view', 'edit']:
+                        if permission_type == 'edit':  # 只允許編輯權限
                             try:
                                 feature = SystemFeature.objects.get(code=feature_code)
                                 FeaturePermission.objects.create(
