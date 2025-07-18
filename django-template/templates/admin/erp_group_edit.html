@@ -1,0 +1,171 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="#/admin/erp/permissions/">ERP權限</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="erp-group-edit">
+    <h1>{{ title }}</h1>
+    
+    <div class="module">
+        <h2>群組資訊</h2>
+        <p><strong>群組名稱:</strong> {{ group.name }}</p>
+        <p><strong>使用者數量:</strong> {{ group.user_set.count }}</p>
+        <p><strong>目前權限數量:</strong> {{ group_permissions.count }}</p>
+    </div>
+
+    <div class="module">
+        <h2>權限設定</h2>
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="permissions-container">
+                <div class="available-permissions">
+                    <h3>可用權限</h3>
+                    <div class="permission-filters">
+                        <input type="text" id="searchPermissions" placeholder="搜尋權限..." style="width: 100%; padding: 5px; margin-bottom: 10px;">
+                    </div>
+                    <div class="permissions-list" id="availablePermissions">
+                        {% regroup all_permissions by content_type as grouped_permissions %}
+                        {% for group_perms in grouped_permissions %}
+                        <div class="permission-group">
+                            <h4>{{ group_perms.grouper.app_label|title }} - {{ group_perms.grouper.model|title }}</h4>
+                            {% for perm in group_perms.list %}
+                            <label class="permission-item">
+                                <input type="checkbox" name="permissions" value="{{ perm.id }}" 
+                                       {% if perm in group_permissions %}checked{% endif %}>
+                                {{ perm.name }}
+                                <small>({{ perm.codename }})</small>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="submit-row">
+                <input type="submit" value="更新權限" class="default button" />
+                <a href="/admin/erp/permissions/" class="button">返回</a>
+                <a href="{% url 'admin:auth_group_change' group.pk %}" class="button">完整編輯</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.erp-group-edit .module {
+    margin-bottom: 20px;
+}
+
+.permissions-container {
+    max-width: 800px;
+}
+
+.available-permissions {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.permissions-list {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: white;
+}
+
+.permission-group {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.permission-group h4 {
+    margin: 0 0 10px 0;
+    color: #417690;
+    font-size: 14px;
+    background: #e9ecef;
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+.permission-item {
+    display: block;
+    padding: 5px 10px;
+    margin: 2px 0;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.permission-item:hover {
+    background: #e9ecef;
+}
+
+.permission-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.permission-item small {
+    color: #6c757d;
+    margin-left: 5px;
+}
+
+.submit-row {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border-radius: 4px;
+}
+
+.button {
+    padding: 8px 16px;
+    text-decoration: none;
+    background: #417690;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.button:hover {
+    background: #205067;
+}
+
+.button.default {
+    background: #28a745;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchPermissions');
+    const permissionItems = document.querySelectorAll('.permission-item');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        permissionItems.forEach(function(item) {
+            const text = item.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                item.style.display = 'block';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

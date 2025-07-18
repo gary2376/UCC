@@ -1,0 +1,80 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.erp-permissions-banner {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.erp-permissions-banner h3 {
+    margin: 0 0 10px 0;
+    color: white;
+}
+
+.erp-permissions-banner p {
+    margin: 0 0 15px 0;
+    opacity: 0.9;
+}
+
+.erp-btn {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 12px 25px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 6px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.erp-btn:hover {
+    background: rgba(255,255,255,0.3);
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.erp-btn i {
+    font-size: 18px;
+}
+</style>
+{% endblock %}
+
+{% block content_title %}
+<div class="erp-permissions-banner">
+    <h3>⚡ 系統權限總覽</h3>
+    <p>您目前在 Django 標準權限列表頁面。如需進行群組管理和權限分配，建議使用我們的 ERP 權限管理中心。</p>
+    <a href="#/admin/erp/permissions/" class="erp-btn">
+        <i class="fas fa-shield-alt"></i>
+        前往 ERP 權限管理中心
+    </a>
+    <a href="#/admin/auth/group/" class="erp-btn" style="margin-left: 10px;">
+        <i class="fas fa-users"></i>
+        群組管理
+    </a>
+</div>
+{{ block.super }}
+{% endblock %}
+
+{% block result_list %}
+<div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+    <h4 style="margin: 0 0 10px 0; color: #856404;">⚠️ 重要提醒</h4>
+    <ul style="margin: 0; padding-left: 20px; color: #856404;">
+        <li>此頁面僅供查看系統中所有可用的權限</li>
+        <li>要創建群組或分配權限給使用者，請前往 <a href="#/admin/erp/permissions/" style="color: #856404; font-weight: bold;">ERP 權限管理中心</a></li>
+        <li>ERP 中心提供圖形化界面，讓權限管理更加直觀和簡單</li>
+    </ul>
+</div>
+{{ block.super }}
+{% endblock %}

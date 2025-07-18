@@ -10,3 +10,5 @@ class AppConfig(AppConfig):
         # Makes sure all signal handlers are connected
         from app import handler  # noqa
         from app import signals  # noqa
+        # 確保 admin 模組被正確導入和註冊
+        from app import admin  # noqa

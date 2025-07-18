@@ -7,25 +7,44 @@
         <i class="fas fa-tachometer-alt"></i> 系統快速入口
     </h2>
     <div style="display: flex; gap: 15px; flex-wrap: wrap;">
-        <a href="/erp/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
+        <a href="#/erp/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
             <i class="fas fa-chart-line fa-2x"></i>
             <div>
                 <div style="font-weight: bold; font-size: 16px;">ERP 系統</div>
                 <div style="font-size: 12px; opacity: 0.8;">企業資源規劃系統</div>
             </div>
         </a>
-        <a href="/erp/permissions/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
+        
+        <!-- 主要的ERP權限管理中心 -->
+        <a href="#/admin/erp/permissions/" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s; border: 2px solid rgba(255,255,255,0.3);">
             <i class="fas fa-shield-alt fa-2x"></i>
             <div>
-                <div style="font-weight: bold; font-size: 16px;">權限管理</div>
-                <div style="font-size: 12px; opacity: 0.8;">用戶權限設定</div>
+                <div style="font-weight: bold; font-size: 16px;">🔐 ERP權限管理</div>
+                <div style="font-size: 12px; opacity: 0.9;">群組・權限・使用者管理</div>
             </div>
         </a>
-        <a href="/admin/app/greenbeaninboundrecord/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
-            <i class="fas fa-coffee fa-2x"></i>
+        
+        <a href="#/admin/auth/group/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
+            <i class="fas fa-users fa-2x"></i>
             <div>
-                <div style="font-weight: bold; font-size: 16px;">生豆入庫記錄</div>
-                <div style="font-size: 12px; opacity: 0.8;">管理生豆記錄</div>
+                <div style="font-weight: bold; font-size: 16px;">查看所有群組</div>
+                <div style="font-size: 12px; opacity: 0.8;">Django群組管理</div>
+            </div>
+        </a>
+        
+        <a href="#/admin/auth/group/add/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
+            <i class="fas fa-plus-circle fa-2x"></i>
+            <div>
+                <div style="font-weight: bold; font-size: 16px;">創建新群組</div>
+                <div style="font-size: 12px; opacity: 0.8;">新增權限群組</div>
+            </div>
+        </a>
+        
+        <a href="#/admin/erp/create-sample-groups/" style="background: rgba(255,255,255,0.2); padding: 15px 25px; border-radius: 8px; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; min-width: 200px; transition: all 0.3s;">
+            <i class="fas fa-magic fa-2x"></i>
+            <div>
+                <div style="font-weight: bold; font-size: 16px;">創建示範群組</div>
+                <div style="font-size: 12px; opacity: 0.8;">快速設定範例</div>
             </div>
         </a>
     </div>

@@ -24,96 +24,163 @@ from app.serializers.user_serializer import (
     RawMaterialWarehouseRecordSerializer,
     RawMaterialMonthlySummarySerializer
 )
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from app.utils.activity_logger import log_user_activity, get_recent_user_activities, get_important_user_activities, _log_to_django_admin
 from django.db import transaction
 from django.core.files.storage import default_storage
+from app.utils.permission_utils import get_user_accessible_sections, require_green_bean_permission, require_raw_material_permission
 
 
-class ERPDashboardView(LoginRequiredMixin, View):
+class ERPDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """ERP 系統儀表板 - 只需要登入"""
+    permission_required = ('app.view_greenbeaninboundrecord', 'app.view_rawmaterialwarehouserecord')
+    raise_exception = True
     template_name = 'erp/dashboard.html'
     
+    def has_permission(self):
+        user = self.request.user
+        # 允許 superuser 或有生豆入庫權限或有原料倉管理權限的用戶訪問
+        return (user.is_superuser or 
+                user.has_perm('app.view_greenbeaninboundrecord') or 
+                user.has_perm('app.view_rawmaterialwarehouserecord'))
+    
     def get(self, request):
-        # 統計數據
-        stats = {
-            'total_green_bean_records': GreenBeanInboundRecord.objects.count(),
-            'total_raw_material_records': RawMaterialWarehouseRecord.objects.count(),
-            'recent_abnormal_records': GreenBeanInboundRecord.objects.filter(is_abnormal=True).count(),
-            'current_month_records': GreenBeanInboundRecord.objects.filter(
-                record_time__month=datetime.now().month,
-                record_time__year=datetime.now().year
-            ).count()
-        }
+        # 使用 Django 預設的權限檢查機制，會自動返回 403 Forbidden
+        if not self.has_permission():
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+        # 獲取使用者權限
+        user_permissions = get_user_accessible_sections(request.user)
         
-        # 最近的入庫記錄
-        recent_records = GreenBeanInboundRecord.objects.order_by('-record_time')[:10]
+        # 根據權限過濾統計數據
+        stats = {}
         
-        # 庫存警示（低庫存商品）
-        low_inventory_threshold = 100  # 可以設定為設置項
-        low_inventory_items = RawMaterialWarehouseRecord.objects.filter(
-            current_inventory__lt=low_inventory_threshold,
-            current_inventory__gt=0
-        ).order_by('current_inventory')[:10]
+        if user_permissions['green_bean']:
+            stats.update({
+                'total_green_bean_records': GreenBeanInboundRecord.objects.count(),
+                'recent_abnormal_records': GreenBeanInboundRecord.objects.filter(is_abnormal=True).count(),
+                'current_month_green_bean_records': GreenBeanInboundRecord.objects.filter(
+                    record_time__month=datetime.now().month,
+                    record_time__year=datetime.now().year
+                ).count()
+            })
+        
+        if user_permissions['raw_material']:
+            stats.update({
+                'total_raw_material_records': RawMaterialWarehouseRecord.objects.count(),
+                'current_month_raw_material_records': RawMaterialWarehouseRecord.objects.filter(
+                    record_time__month=datetime.now().month,
+                    record_time__year=datetime.now().year
+                ).count()
+            })
+        
+        # 根據權限獲取最近的記錄
+        recent_green_bean_records = []
+        recent_raw_material_records = []
+        low_inventory_items = []
+        
+        if user_permissions['green_bean']:
+            recent_green_bean_records = GreenBeanInboundRecord.objects.order_by('-record_time')[:10]
+        
+        if user_permissions['raw_material']:
+            recent_raw_material_records = RawMaterialWarehouseRecord.objects.order_by('-record_time')[:10]
+            # 庫存警示（低庫存商品）
+            low_inventory_threshold = 100
+            low_inventory_items = RawMaterialWarehouseRecord.objects.filter(
+                current_inventory__lt=low_inventory_threshold,
+                current_inventory__gt=0
+            ).order_by('current_inventory')[:10]
         
         context = {
             'stats': stats,
-            'recent_records': recent_records,
+            'recent_green_bean_records': recent_green_bean_records,
+            'recent_raw_material_records': recent_raw_material_records,
             'low_inventory_items': low_inventory_items,
+            'user_permissions': user_permissions,
         }
         
         return render(request, self.template_name, context)
 
 
-class ERPCleanDashboardView(LoginRequiredMixin, View):
+class ERPCleanDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
     """ERP 純淨儀表板 (無側邊選單) - 只需要登入"""
+    permission_required = ('app.view_greenbeaninboundrecord', 'app.view_rawmaterialwarehouserecord')
+    raise_exception = True
     template_name = 'erp/dashboard_clean.html'
     
+    def has_permission(self):
+        user = self.request.user
+        # 允許 superuser 或有生豆入庫權限或有原料倉管理權限的用戶訪問
+        return (user.is_superuser or 
+                user.has_perm('app.view_greenbeaninboundrecord') or 
+                user.has_perm('app.view_rawmaterialwarehouserecord'))
+    
     def get(self, request):
+        # 使用 Django 預設的權限檢查機制，會自動返回 403 Forbidden
+        if not self.has_permission():
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+
         # 不記錄查看儀表板的活動，因為用戶不想看到 view 操作
-        
-        # 統計數據
-        stats = {
-            'total_green_bean_records': GreenBeanInboundRecord.objects.count(),
-            'total_raw_material_records': RawMaterialWarehouseRecord.objects.count(),
-            'recent_abnormal_records': GreenBeanInboundRecord.objects.filter(is_abnormal=True).count(),
-            'current_month_records': GreenBeanInboundRecord.objects.filter(
-                record_time__month=datetime.now().month,
-                record_time__year=datetime.now().year
-            ).count()
-        }
-        
-        # 最近的入庫記錄（顯示所有記錄，按時間排序）
-        recent_records = GreenBeanInboundRecord.objects.order_by('-record_time')[:50]
-        
-        # 庫存警示（低庫存商品）
-        low_inventory_threshold = 100  # 可以設定為設置項
-        low_inventory_items = RawMaterialWarehouseRecord.objects.filter(
-            current_inventory__lt=low_inventory_threshold,
-            current_inventory__gt=0
-        ).order_by('current_inventory')[:10]
-        
+
+        # 獲取使用者權限
+        user_permissions = get_user_accessible_sections(request.user)
+
+        # 根據權限過濾統計數據
+        stats = {}
+
+        if user_permissions['green_bean']:
+            stats.update({
+                'total_green_bean_records': GreenBeanInboundRecord.objects.count(),
+                'recent_abnormal_records': GreenBeanInboundRecord.objects.filter(is_abnormal=True).count(),
+                'current_month_records': GreenBeanInboundRecord.objects.filter(
+                    record_time__month=datetime.now().month,
+                    record_time__year=datetime.now().year
+                ).count()
+            })
+
+        if user_permissions['raw_material']:
+            stats.update({
+                'total_raw_material_records': RawMaterialWarehouseRecord.objects.count(),
+            })
+
+        # 根據權限獲取記錄
+        recent_records = []
+        low_inventory_items = []
+
+        if user_permissions['green_bean']:
+            recent_records = GreenBeanInboundRecord.objects.order_by('-record_time')[:50]
+
+        if user_permissions['raw_material']:
+            # 庫存警示（低庫存商品）
+            low_inventory_threshold = 100  # 可以設定為設置項
+            low_inventory_items = RawMaterialWarehouseRecord.objects.filter(
+                current_inventory__lt=low_inventory_threshold,
+                current_inventory__gt=0
+            ).order_by('current_inventory')[:10]
+
         # 最近的重要用戶活動記錄（包含所有檔案和資料操作）
         recent_activities = get_important_user_activities(limit=30)
-        
+
         # 獲取本週記錄統計
         from app.utils.activity_logger import get_weekly_records_comparison
         weekly_comparison = get_weekly_records_comparison()
-        
+
         context = {
             'stats': stats,
             'recent_records': recent_records,
             'low_inventory_items': low_inventory_items,
             'recent_activities': recent_activities,
             'weekly_comparison': weekly_comparison,
+            'user_permissions': user_permissions,
         }
-        
+
         return render(request, self.template_name, context)
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@require_green_bean_permission('view')
 def green_bean_records_api(request):
     """生豆入庫記錄 API - 需要ERP查看權限"""
     try:
@@ -181,7 +248,7 @@ def green_bean_records_api(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@require_raw_material_permission('view')
 def raw_material_records_api(request):
     """原料倉記錄 API - 需要ERP查看權限"""
     try:
@@ -339,6 +406,7 @@ def production_statistics_api(request):
 
 
 @login_required
+@permission_required('app.view_greenbeaninboundrecord', raise_exception=True)
 def green_bean_records_view(request):
     """生豆入庫記錄頁面視圖"""
     # 獲取所有記錄
@@ -406,6 +474,18 @@ def green_bean_records_view(request):
 
 
 @login_required
+@permission_required('app.add_greenbeaninboundrecord', raise_exception=True)
+def green_bean_upload_page(request):
+    """生豆入庫記錄上傳頁面"""
+    return render(request, 'erp/import_data.html', {
+        'title': '生豆入庫記錄上傳',
+        'upload_url': '/erp/green-bean-records/upload-file/',
+        'records_url': '/erp/green-bean-records/uploads/'
+    })
+
+
+@login_required
+@permission_required('app.add_greenbeaninboundrecord', raise_exception=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def green_bean_upload_file(request):
@@ -663,6 +743,7 @@ def calculate_file_hash(file):
 
 
 @login_required
+@permission_required('app.delete_greenbeaninboundrecord', raise_exception=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def delete_green_bean_record(request, record_id):
@@ -711,6 +792,7 @@ def delete_green_bean_record(request, record_id):
 
 
 @login_required
+@permission_required('app.delete_greenbeaninboundrecord', raise_exception=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def batch_delete_green_bean_records(request):
@@ -754,7 +836,8 @@ def batch_delete_green_bean_records(request):
 
 
 @login_required
-@require_http_methods(["POST"])
+@permission_required('app.delete_greenbeaninboundrecord', raise_exception=True)
+@require_http_methods(["DELETE"])
 def delete_upload_record(request, upload_id):
     """刪除上傳記錄及相關的資料庫記錄"""
     try:
@@ -770,25 +853,96 @@ def delete_upload_record(request, upload_id):
         
         # 使用事務確保資料一致性
         with transaction.atomic():
-            # 刪除相關的生豆入庫記錄
-            if upload_record.created_record_ids:
-                deleted_count = 0
-                for record_id in upload_record.created_record_ids:
-                    try:
-                        record = GreenBeanInboundRecord.objects.get(id=record_id)
+            deleted_count = 0
+            deleted_record_ids = []
+            relation_count = 0
+            
+            # 方法1：通過 UploadRecordRelation 查找並刪除相關記錄
+            relations = UploadRecordRelation.objects.filter(upload_record=upload_record)
+            relation_count = relations.count()
+            
+            for relation in relations:
+                try:
+                    # 根據 content_type 找到對應的記錄並刪除
+                    if relation.content_type == 'green_bean':
+                        record = GreenBeanInboundRecord.objects.get(id=relation.object_id)
+                        deleted_record_ids.append(str(record.id))
                         record.delete()
                         deleted_count += 1
-                    except GreenBeanInboundRecord.DoesNotExist:
-                        # 記錄可能已經被刪除了，繼續處理
-                        pass
-                
-                # 記錄用戶活動
-                log_user_activity(
-                    request.user,
-                    'delete_upload_record',
-                    f'刪除上傳記錄 {upload_record.file_name}，同時刪除了 {deleted_count} 筆相關記錄',
-                    request=request
-                )
+                except GreenBeanInboundRecord.DoesNotExist:
+                    # 記錄可能已經被刪除了，繼續處理
+                    pass
+            
+            # 刪除關聯記錄
+            relations.delete()
+            
+            # 方法2：如果還有 created_record_ids 中的記錄，也一併刪除
+            if upload_record.created_record_ids:
+                for record_id in upload_record.created_record_ids:
+                    if str(record_id) not in deleted_record_ids:  # 避免重複刪除
+                        try:
+                            record = GreenBeanInboundRecord.objects.get(id=record_id)
+                            record.delete()
+                            deleted_count += 1
+                            deleted_record_ids.append(str(record_id))
+                        except GreenBeanInboundRecord.DoesNotExist:
+                            # 記錄可能已經被刪除了，繼續處理
+                            pass
+            
+            # 方法3：清理所有與此上傳記錄相關的孤立記錄
+            # 檢查是否還有其他上傳記錄引用這些記錄
+            other_upload_records = FileUploadRecord.objects.exclude(id=upload_record.id)
+            protected_record_ids = set()
+            
+            for other_upload in other_upload_records:
+                if other_upload.created_record_ids:
+                    protected_record_ids.update([str(rid) for rid in other_upload.created_record_ids])
+            
+            # 找出不被其他上傳記錄保護的記錄並刪除
+            records_to_delete = [rid for rid in deleted_record_ids if rid not in protected_record_ids]
+            
+            # 清理可能存在的其他關聯記錄
+            other_relations = UploadRecordRelation.objects.filter(
+                content_type='green_bean',
+                object_id__in=records_to_delete
+            ).exclude(upload_record=upload_record)
+            
+            additional_relation_count = other_relations.count()
+            if other_relations.exists():
+                other_relations.delete()
+                relation_count += additional_relation_count
+            
+            # 最後安全檢查：如果沒有其他上傳記錄，且儀表板仍顯示資料，則清理所有孤立記錄
+            remaining_upload_count = FileUploadRecord.objects.exclude(id=upload_record.id).count()
+            if remaining_upload_count == 0:
+                # 這是最後一個上傳記錄，清理所有可能的孤立記錄
+                orphaned_records = GreenBeanInboundRecord.objects.all()
+                additional_deleted = orphaned_records.count()
+                if additional_deleted > 0:
+                    orphaned_records.delete()
+                    deleted_count += additional_deleted
+                    
+                # 清理所有關聯記錄
+                all_relations = UploadRecordRelation.objects.filter(content_type='green_bean')
+                additional_relations = all_relations.count()
+                if additional_relations > 0:
+                    all_relations.delete()
+                    relation_count += additional_relations
+            
+            # 記錄用戶活動
+            log_user_activity(
+                request.user,
+                'delete_upload_record',
+                f'刪除上傳記錄 {upload_record.file_name}，刪除了 {deleted_count} 筆生豆記錄，清理了 {relation_count} 筆關聯記錄',
+                request=request,
+                details={
+                    'upload_id': str(upload_record.id),
+                    'deleted_records': deleted_record_ids,
+                    'deleted_count': deleted_count,
+                    'relation_count': relation_count,
+                    'is_last_upload': remaining_upload_count == 0
+                }
+            )
             
             # 刪除上傳記錄
             file_name = upload_record.file_name
@@ -796,7 +950,9 @@ def delete_upload_record(request, upload_id):
             
             return JsonResponse({
                 'success': True,
-                'message': f'成功刪除上傳記錄 "{file_name}" 及相關資料'
+                'message': f'成功刪除上傳記錄 "{file_name}" 及 {deleted_count} 筆相關資料，清理了 {relation_count} 筆關聯記錄',
+                'deleted_count': deleted_count,
+                'relation_count': relation_count
             })
             
     except Exception as e:
@@ -810,25 +966,31 @@ def delete_upload_record(request, upload_id):
 def get_upload_records(request):
     """獲取上傳記錄列表（用於AJAX刷新）"""
     try:
+        # 獲取所有生豆上傳記錄，不限制數量
         recent_uploads = FileUploadRecord.objects.filter(
             file_type='green_bean'
-        ).order_by('-upload_time')[:10]  # 只顯示最近10筆
+        ).order_by('-upload_time')
         
         upload_data = []
         for upload in recent_uploads:
             upload_data.append({
                 'id': str(upload.id),
                 'file_name': upload.file_name,
+                'file_size': upload.file_size,
+                'file_hash': upload.file_hash,
                 'upload_time': upload.upload_time.strftime('%Y-%m-%d %H:%M'),
-                'records_count': upload.records_count,
+                'uploaded_by': upload.uploaded_by.username if upload.uploaded_by else '未知',
+                'records_count': upload.records_count or 0,
                 'status': upload.status,
                 'status_display': upload.get_status_display(),
+                'error_message': upload.error_message,
                 'can_delete': upload.uploaded_by == request.user or request.user.is_superuser
             })
         
         return JsonResponse({
             'success': True,
-            'uploads': upload_data
+            'uploads': upload_data,
+            'total_count': len(upload_data)
         })
         
     except Exception as e:
@@ -980,6 +1142,7 @@ def get_user_activities(request):
 
 
 @login_required
+@permission_required('app.view_useractivitylog', raise_exception=True)
 def activity_log_view(request):
     """活動記錄頁面視圖"""
     # 獲取查詢參數
@@ -1026,6 +1189,7 @@ def activity_log_view(request):
 
 
 @login_required
+@permission_required('app.add_greenbeaninboundrecord', raise_exception=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def add_green_bean_record(request):
@@ -1229,7 +1393,7 @@ def add_activity_record(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@require_green_bean_permission('view')
 def green_bean_names_api(request):
     """獲取生豆名稱列表API"""
     try:

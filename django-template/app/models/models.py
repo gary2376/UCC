@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.core.validators import RegexValidator
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
@@ -196,6 +196,64 @@ class RawMaterialMonthlySummary(models.Model):
 
 
 # 檔案上傳記錄模型
+class FileUploadRecordQuerySet(models.QuerySet):
+    """自定義查詢集，支援批量刪除相關記錄"""
+    
+    def delete(self):
+        """批量刪除時也刪除相關記錄"""
+        from django.db import transaction
+        
+        with transaction.atomic():
+            from app.models import UploadRecordRelation, GreenBeanInboundRecord
+            
+            deleted_records = 0
+            
+            # 對每個上傳記錄刪除相關記錄
+            for upload_record in self:
+                relations = UploadRecordRelation.objects.filter(upload_record=upload_record)
+                
+                for relation in relations:
+                    try:
+                        if relation.content_type == 'green_bean':
+                            record = GreenBeanInboundRecord.objects.get(id=relation.object_id)
+                            record.delete()
+                            deleted_records += 1
+                    except GreenBeanInboundRecord.DoesNotExist:
+                        pass
+                
+                # 刪除關聯記錄
+                relations.delete()
+                
+                # 如果還有 created_record_ids 中的記錄，也一併刪除
+                if upload_record.created_record_ids:
+                    for record_id in upload_record.created_record_ids:
+                        try:
+                            record = GreenBeanInboundRecord.objects.get(id=record_id)
+                            record.delete()
+                            deleted_records += 1
+                        except GreenBeanInboundRecord.DoesNotExist:
+                            pass
+            
+            # 調用父類的批量刪除
+            result = super().delete()
+            
+            # 檢查是否還有其他上傳記錄，如果沒有則清理所有孤立記錄
+            remaining_upload_count = FileUploadRecord.objects.count()
+            if remaining_upload_count == 0:
+                # 沒有上傳記錄了，清理所有可能的孤立記錄
+                orphaned_records = GreenBeanInboundRecord.objects.all()
+                additional_deleted = orphaned_records.count()
+                if additional_deleted > 0:
+                    orphaned_records.delete()
+                    
+                # 清理所有關聯記錄
+                all_relations = UploadRecordRelation.objects.filter(content_type='green_bean')
+                if all_relations.exists():
+                    all_relations.delete()
+            
+            return result
+
+
 class FileUploadRecord(models.Model):
     """檔案上傳記錄"""
     class Meta:
@@ -203,6 +261,8 @@ class FileUploadRecord(models.Model):
         verbose_name = '檔案上傳記錄'
         verbose_name_plural = '檔案上傳記錄'
         ordering = ['-upload_time']
+
+    objects = FileUploadRecordQuerySet.as_manager()  # 使用自定義查詢集
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     file_name = models.CharField('檔案名稱', max_length=255)
@@ -228,6 +288,56 @@ class FileUploadRecord(models.Model):
     
     def __str__(self):
         return f"{self.file_name} - {self.get_status_display()}"
+    
+    def delete(self, using=None, keep_parents=False):
+        """覆寫刪除方法，確保同時刪除相關記錄"""
+        from django.db import transaction
+        
+        with transaction.atomic():
+            # 刪除相關的生豆入庫記錄
+            from app.models import UploadRecordRelation, GreenBeanInboundRecord
+            
+            relations = UploadRecordRelation.objects.filter(upload_record=self)
+            deleted_records = 0
+            
+            for relation in relations:
+                try:
+                    if relation.content_type == 'green_bean':
+                        record = GreenBeanInboundRecord.objects.get(id=relation.object_id)
+                        record.delete()
+                        deleted_records += 1
+                except GreenBeanInboundRecord.DoesNotExist:
+                    pass
+            
+            # 刪除關聯記錄
+            relations.delete()
+            
+            # 如果還有 created_record_ids 中的記錄，也一併刪除
+            if self.created_record_ids:
+                for record_id in self.created_record_ids:
+                    try:
+                        record = GreenBeanInboundRecord.objects.get(id=record_id)
+                        record.delete()
+                        deleted_records += 1
+                    except GreenBeanInboundRecord.DoesNotExist:
+                        pass
+            
+            # 檢查是否為最後一個上傳記錄，如果是則清理所有孤立記錄
+            remaining_upload_count = FileUploadRecord.objects.exclude(id=self.id).count()
+            if remaining_upload_count == 0:
+                # 這是最後一個上傳記錄，清理所有可能的孤立記錄
+                orphaned_records = GreenBeanInboundRecord.objects.all()
+                additional_deleted = orphaned_records.count()
+                if additional_deleted > 0:
+                    orphaned_records.delete()
+                    
+                # 清理所有關聯記錄
+                all_relations = UploadRecordRelation.objects.filter(content_type='green_bean')
+                if all_relations.exists():
+                    all_relations.delete()
+            
+            # 調用父類的刪除方法
+            return super().delete(using=using, keep_parents=keep_parents)
 
 
 # 新增：用於追蹤上傳記錄與業務資料關聯的中間表
@@ -292,3 +402,20 @@ class UserActivityLog(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.get_action_display()} - {self.description}"
+
+
+# ERP 權限管理代理模型
+class ERPGroup(Group):
+    """ERP群組代理模型，用於在ERP section顯示群組管理"""
+    class Meta:
+        proxy = True
+        verbose_name = '群組'
+        verbose_name_plural = '群組管理'
+
+
+class ERPPermission(Permission):
+    """ERP權限代理模型，用於在ERP section顯示權限管理"""
+    class Meta:
+        proxy = True
+        verbose_name = '權限'
+        verbose_name_plural = '權限管理'

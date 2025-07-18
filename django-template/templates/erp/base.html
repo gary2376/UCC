@@ -105,29 +105,13 @@
                     
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
-                               href="/erp/dashboard/">
-                                <i class="fas fa-tachometer-alt"></i> 儀表板
+                            <a class="nav-link" href="/erp/dashboard/">
+                                <i class="fas fa-chart-line"></i> ERP 儀表板
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/admin/app/greenbeaninboundrecord/">
+                            <a class="nav-link" href="/erp/green-bean-records/">
                                 <i class="fas fa-coffee"></i> 生豆入庫記錄
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/app/rawmaterialwarehouserecord/">
-                                <i class="fas fa-boxes"></i> 原料倉管理
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/app/rawmaterialmonthlysummary/">
-                                <i class="fas fa-chart-bar"></i> 月度統計
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'erp:file_upload' %}">
-                                <i class="fas fa-upload"></i> 檔案上傳
                             </a>
                         </li>
                         <li class="nav-item">

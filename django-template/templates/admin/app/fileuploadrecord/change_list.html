@@ -1,0 +1,62 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+/* 簡約按鈕樣式 */
+.custom-nav-buttons {
+    display: inline-flex;
+    gap: 8px;
+    margin-left: 10px;
+}
+
+.nav-btn {
+    background: #417690;
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.nav-btn:hover {
+    background: #205067;
+    color: white;
+    text-decoration: none;
+}
+
+.nav-btn i {
+    font-size: 12px;
+}
+
+/* 調整object-tools的樣式使按鈕能並排 */
+.object-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+</style>
+{% endblock %}
+
+{% block object-tools %}
+<div class="object-tools">
+    {{ block.super }}
+    <div class="custom-nav-buttons">
+        <a href="/admin/app/greenbeaninboundrecord/" class="nav-btn">
+            <i class="fas fa-arrow-left"></i> 上一頁
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+{% endblock %}

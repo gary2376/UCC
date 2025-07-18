@@ -97,6 +97,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django_settings_export.settings_export',
+                'app.context_processors.permission_context',
             ],
         },
     },
@@ -280,7 +281,7 @@ SIMPLEUI_CONFIG = {
                 {
                     'name': 'ERP 系統儀表板',
                     'icon': 'fas fa-chart-line',
-                    'url': '/erp/clean/',
+                    'url': '/admin/erp/clean/',
                 },
                 {
                     'name': '生豆入庫記錄',
@@ -314,9 +315,9 @@ SIMPLEUI_CONFIG = {
                     'url': '/admin/app/adminuser/'
                 },
                 {
-                    'name': '權限管理',
-                    'icon': 'fas fa-shield-alt',
-                    'url': '/erp/permissions/'
+                    'name': '群組管理',
+                    'icon': 'fas fa-users-cog',
+                    'url': '/admin/auth/group/'
                 }
             ]
         },

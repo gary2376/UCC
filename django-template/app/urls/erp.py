@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-from django.urls import path
+from django.urls import path, include
+from django.contrib import admin
 from app.views.erp_views import (
     ERPDashboardView,
     ERPCleanDashboardView,
@@ -10,6 +11,7 @@ from app.views.erp_views import (
     inventory_statistics_api,
     production_statistics_api,
     green_bean_records_view,
+    green_bean_upload_page,
     green_bean_upload_file,
     add_green_bean_record,
     delete_green_bean_record,
@@ -19,6 +21,7 @@ from app.views.erp_views import (
     activity_log_view,
     add_activity_record
 )
+from app.views.permission_views import permissions_redirect_view
 
 
 app_name = 'erp'
@@ -28,6 +31,9 @@ urlpatterns = [
     path('', ERPDashboardView.as_view(), name='dashboard'),
     path('dashboard/', ERPDashboardView.as_view(), name='dashboard_alt'),
     path('clean/', ERPCleanDashboardView.as_view(), name='clean_dashboard'),
+    
+    # 權限管理
+    path('permissions/', permissions_redirect_view, name='permissions'),
 
     # 資料 API
     path('api/green-bean-records/', green_bean_records_api, name='green_bean_records_api'),
@@ -39,7 +45,8 @@ urlpatterns = [
     # 生豆入庫記錄頁面
     path('green-bean-records/', green_bean_records_view, name='green_bean_records'),
     path('green-bean-records/add/', add_green_bean_record, name='add_green_bean_record'),
-    path('green-bean-records/upload/', green_bean_upload_file, name='green_bean_upload_file'),
+    path('green-bean-records/upload/', green_bean_upload_page, name='green_bean_upload_page'),
+    path('green-bean-records/upload-file/', green_bean_upload_file, name='green_bean_upload_file'),
     path('green-bean-records/delete/<uuid:record_id>/', delete_green_bean_record, name='delete_green_bean_record'),
     path('green-bean-records/batch-delete/', batch_delete_green_bean_records, name='batch_delete_green_bean_records'),
     path('green-bean-records/upload/delete/<uuid:upload_id>/', delete_upload_record, name='delete_upload_record'),

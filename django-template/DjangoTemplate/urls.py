@@ -37,6 +37,8 @@ urlpatterns = [
                   path('', include('app.urls')),
                   # ERP 系統
                   path('erp/', include('app.urls.erp')),
+                  # ERP 權限管理 (在admin下的自定義路徑)
+                  path('admin/erp/', include('app.urls.admin_erp')),
                   # 後台
                   path('admin/', admin.site.urls),
               ]

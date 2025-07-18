@@ -165,36 +165,41 @@
     <div class="container">
         <!-- 統計卡片 -->
         <div class="row">
+            {% if user_permissions.green_bean %}
             <div class="col-md-3">
                 <div class="dashboard-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5>生豆入庫記錄</h5>
-                            <div class="stats-number">{{ stats.total_green_bean_records }}</div>
+                            <div class="stats-number">{{ stats.total_green_bean_records|default:0 }}</div>
                             <small>總記錄數</small>
                         </div>
                         <i class="fas fa-coffee fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
+            {% endif %}
+            {% if user_permissions.raw_material %}
             <div class="col-md-3">
                 <div class="dashboard-card success">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5>原料倉記錄</h5>
-                            <div class="stats-number">{{ stats.total_raw_material_records }}</div>
+                            <div class="stats-number">{{ stats.total_raw_material_records|default:0 }}</div>
                             <small>庫存商品數</small>
                         </div>
                         <i class="fas fa-boxes fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
+            {% endif %}
+            {% if user_permissions.green_bean %}
             <div class="col-md-3">
                 <div class="dashboard-card warning">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5>異常記錄</h5>
-                            <div class="stats-number">{{ stats.recent_abnormal_records }}</div>
+                            <div class="stats-number">{{ stats.recent_abnormal_records|default:0 }}</div>
                             <small>需要關注</small>
                         </div>
                         <i class="fas fa-exclamation-triangle fa-4x stats-icon"></i>
@@ -206,13 +211,14 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h5>本月記錄</h5>
-                            <div class="stats-number">{{ stats.current_month_records }}</div>
+                            <div class="stats-number">{{ stats.current_month_records|default:0 }}</div>
                             <small>當月新增</small>
                         </div>
                         <i class="fas fa-calendar-month fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         <!-- 本週記錄統計卡片 -->
@@ -270,13 +276,14 @@
             </div>
         </div>
 
+        {% if user_permissions.green_bean %}
         <div class="row">
             <!-- 最近入庫記錄 - 占滿整行寬度 -->
             <div class="col-md-12">
                 <div class="content-card">
                     <h4 class="mb-4">
                         <i class="fas fa-history text-primary me-2"></i> 
-                        最近入庫記錄
+                        最近生豆入庫記錄
                     </h4>
                     <div class="table-responsive">
                         <table class="table dashboard-table table-hover">
@@ -344,6 +351,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="row">
             <!-- 用戶活動記錄 -->
@@ -443,12 +451,13 @@
                 </div>
             </div>
 
+            {% if user_permissions.raw_material %}
             <!-- 庫存警示 -->
             <div class="col-md-4">
                 <div class="content-card">
                     <h4 class="mb-4">
                         <i class="fas fa-exclamation-circle text-warning me-2"></i> 
-                        庫存警示
+                        原料庫存警示
                     </h4>
                     <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                         <table class="table table-sm dashboard-table">
@@ -492,6 +501,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
         </div>
 
     </div>

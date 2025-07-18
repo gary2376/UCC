@@ -5,47 +5,72 @@
 {{ block.super }}
 <style>
 .object-tools {
-    display: none !important; /* 隱藏新增按鈕 */
+    margin-bottom: 10px;
 }
 
-.custom-return-btn {
-    background-color: #007cba;
-    border-color: #007cba;
-    color: white;
-    padding: 10px 15px;
-    text-decoration: none;
+.object-tools .addlink {
+    display: none !important; /* 隱藏預設新增按鈕 */
+}
+
+/* 調整搜尋表單樣式 */
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 上傳按鈕樣式統一 */
+.upload-btn {
+    background: #5b80b2;
+    background-image: linear-gradient(to bottom, #5b80b2, #4a6c9b);
+    border: 1px solid #4a6c9b;
     border-radius: 4px;
-    margin-bottom: 20px;
+    color: #fff;
+    cursor: pointer;
     display: inline-block;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 11px;
+    padding: 8px 10px;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    vertical-align: middle;
+    white-space: nowrap;
+    margin: 0;
 }
 
-.custom-return-btn:hover {
-    background-color: #005a87;
-    border-color: #005a87;
-    color: white;
+.upload-btn:hover,
+.upload-btn:focus {
+    background: #4a6c9b;
+    background-image: linear-gradient(to bottom, #4a6c9b, #3d5983);
+    border-color: #3d5983;
+    color: #fff;
+    text-decoration: none;
+}
+
+.upload-btn i {
+    margin-right: 4px;
+    font-size: 11px;
 }
 </style>
 {% endblock %}
 
-{% block content_title %}
-{# 移除自定義返回按鈕，使用標準 Django Admin 導航 #}
+{% block search %}
 {{ block.super }}
+{% endblock %}
+
+{% block object-tools %}
+<ul class="object-tools">
+    {{ block.super }}
+    <li>
+        <a href="/erp/green-bean-records/upload/" class="upload-btn">
+            <i class="fas fa-upload"></i> 上傳檔案
+        </a>
+    </li>
+</ul>
 {% endblock %}
 
 {% block extrajs %}
 {{ block.super }}
-<script>
-// 隱藏所有新增相關按鈕
-document.addEventListener('DOMContentLoaded', function() {
-    // 隱藏新增按鈕
-    const addButtons = document.querySelectorAll('.addlink, .add-another');
-    addButtons.forEach(btn => btn.style.display = 'none');
-    
-    // 隱藏object-tools工具列
-    const objectTools = document.querySelector('.object-tools');
-    if (objectTools) {
-        objectTools.style.display = 'none';
-    }
-});
-</script>
 {% endblock %}

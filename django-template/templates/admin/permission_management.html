@@ -1,0 +1,286 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="permission-management">
+    <h1>{{ title }}</h1>
+    
+    <!-- 快速操作區 -->
+    <div class="module">
+        <h2>快速操作</h2>
+        <div class="quick-actions">
+            <a href="{% url 'admin:auth_group_add' %}" class="button default">創建新群組</a>
+            <a href="{% url 'admin:auth_group_changelist' %}" class="button">管理群組</a>
+            <a href="{% url 'admin:auth_permission_changelist' %}" class="button">查看所有權限</a>
+            <a href="/admin/erp/create-sample-groups/" class="button">創建示範群組</a>
+        </div>
+    </div>
+
+    <!-- 群組管理區 -->
+    <div class="module">
+        <h2>群組管理 ({{ groups.count }} 個群組)</h2>
+        <div class="group-management">
+            <div class="add-group-form">
+                <h3>快速創建群組</h3>
+                <form method="post" action="{% url 'admin:auth_group_add' %}" style="display: inline-flex; gap: 10px; align-items: center;">
+                    {% csrf_token %}
+                    <input type="text" name="name" placeholder="群組名稱" required style="padding: 5px; border: 1px solid #ccc;">
+                    <button type="submit" class="button">創建</button>
+                </form>
+            </div>
+        </div>
+        
+        <table class="module-table">
+            <thead>
+                <tr>
+                    <th>群組名稱</th>
+                    <th>權限數量</th>
+                    <th>使用者數量</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for group in groups %}
+                <tr>
+                    <td><strong>{{ group.name }}</strong></td>
+                    <td>{{ group.permissions.count }}</td>
+                    <td>{{ group.user_set.count }}</td>
+                    <td>
+                        <a href="{% url 'admin:auth_group_change' group.pk %}" class="button tiny">編輯權限</a>
+                        <a href="#" onclick="showGroupDetails({{ group.pk }})" class="button tiny">快速查看</a>
+                        {% if group.user_set.count == 0 %}
+                        <a href="{% url 'admin:auth_group_delete' group.pk %}" class="button tiny" style="background: #dc3545;">刪除</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">尚無群組，<a href="{% url 'admin:auth_group_add' %}">創建第一個群組</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 使用者權限概覽 -->
+    <div class="module">
+        <h2>使用者權限概覽</h2>
+        <table class="module-table">
+            <thead>
+                <tr>
+                    <th>使用者名稱</th>
+                    <th>電子郵件</th>
+                    <th>所屬群組</th>
+                    <th>個別權限</th>
+                    <th>是否為員工</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td><strong>{{ user.username }}</strong></td>
+                    <td>{{ user.email|default:"未設定" }}</td>
+                    <td>
+                        {% for group in user.groups.all %}
+                            <span class="tag">{{ group.name }}</span>
+                        {% empty %}
+                            無群組
+                        {% endfor %}
+                    </td>
+                    <td>{{ user.user_permissions.count }}</td>
+                    <td>{% if user.is_staff %}是{% else %}否{% endif %}</td>
+                    <td>
+                        <a href="{% url 'admin:app_user_change' user.pk %}" class="button tiny">編輯</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 權限統計 -->
+    <div class="module">
+        <h2>權限統計</h2>
+        <div class="permission-stats">
+            <div class="stat-item">
+                <h3>{{ permissions.count }}</h3>
+                <p>總權限數</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ content_types.count }}</h3>
+                <p>內容類型</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ groups.count }}</h3>
+                <p>群組數</p>
+            </div>
+            <div class="stat-item">
+                <h3>{{ users.count }}</h3>
+                <p>使用者數</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.permission-management .module {
+    margin-bottom: 20px;
+}
+
+.quick-actions {
+    padding: 10px;
+}
+
+.quick-actions .button {
+    margin-right: 10px;
+    padding: 8px 16px;
+    text-decoration: none;
+    background: #417690;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.quick-actions .button:hover {
+    background: #205067;
+}
+
+.module-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.module-table th,
+.module-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+.module-table th {
+    background: #f8f8f8;
+    font-weight: bold;
+}
+
+.tag {
+    background: #e1f5fe;
+    color: #0277bd;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    margin-right: 4px;
+}
+
+.permission-stats {
+    display: flex;
+    gap: 20px;
+    padding: 10px;
+}
+
+.stat-item {
+    text-align: center;
+    background: #f8f8f8;
+    padding: 15px;
+    border-radius: 4px;
+    flex: 1;
+}
+
+.stat-item h3 {
+    margin: 0;
+    font-size: 24px;
+    color: #417690;
+}
+
+.stat-item p {
+    margin: 5px 0 0 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.button.tiny {
+    padding: 4px 8px;
+    font-size: 11px;
+    margin-right: 5px;
+}
+
+.group-management {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f8f8;
+    border-radius: 4px;
+}
+
+.add-group-form {
+    margin-bottom: 10px;
+}
+
+.add-group-form h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #417690;
+}
+
+.group-details-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 1000;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+}
+</style>
+
+<!-- 群組詳情模態框 -->
+<div class="modal-overlay" id="modalOverlay" onclick="hideModal()"></div>
+<div class="group-details-modal" id="groupModal">
+    <h3>群組詳情</h3>
+    <div id="groupDetails"></div>
+    <button onclick="hideModal()" class="button">關閉</button>
+</div>
+
+<script>
+function showGroupDetails(groupId) {
+    // 這裡可以用AJAX獲取群組詳情，現在先顯示簡單訊息
+    document.getElementById('groupDetails').innerHTML = `
+        <p>群組ID: ${groupId}</p>
+        <p>正在加載群組詳情...</p>
+        <p><a href="/admin/auth/group/${groupId}/change/" class="button">編輯此群組</a></p>
+    `;
+    document.getElementById('modalOverlay').style.display = 'block';
+    document.getElementById('groupModal').style.display = 'block';
+}
+
+function hideModal() {
+    document.getElementById('modalOverlay').style.display = 'none';
+    document.getElementById('groupModal').style.display = 'none';
+}
+</script>
+{% endblock %}
