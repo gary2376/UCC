@@ -9,6 +9,7 @@ from django.shortcuts import redirect
 from django.http import HttpResponseRedirect
 from django import forms
 from datetime import datetime
+import json
 
 from app.models import AdminUser, User, GreenBeanInboundRecord, RawMaterialWarehouseRecord, RawMaterialMonthlySummary, FileUploadRecord, UploadRecordRelation
 from app.utils.activity_logger import log_user_activity
@@ -421,11 +422,75 @@ class GreenBeanInboundRecordAdmin(admin.ModelAdmin):
         super().delete_queryset(request, queryset)
 
 
+class RawMaterialWarehouseRecordForm(forms.ModelForm):
+    """自定義原料倉記錄表單，支援動態欄位編輯"""
+    
+    # 動態欄位（JSON格式）
+    dynamic_fields_json = forms.CharField(
+        label='動態欄位資料 (JSON格式)',
+        widget=forms.Textarea(attrs={
+            'rows': 10,
+            'cols': 80,
+            'placeholder': '{"欄位名稱": "數值", "11/13_入庫": 100.5, "11/12_領用": 50.0}'
+        }),
+        required=False,
+        help_text='請使用 JSON 格式輸入動態欄位資料，例如：{"11/13_入庫": 100.5, "11/12_領用": 50.0}'
+    )
+    
+    class Meta:
+        model = RawMaterialWarehouseRecord
+        fields = '__all__'
+        exclude = ['dynamic_fields']  # 排除原始欄位，使用自定義欄位
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 如果有實例，將動態欄位轉換為 JSON 字串
+        if self.instance and self.instance.pk:
+            try:
+                dynamic_data = self.instance.dynamic_fields or {}
+                self.fields['dynamic_fields_json'].initial = json.dumps(dynamic_data, ensure_ascii=False, indent=2)
+            except:
+                self.fields['dynamic_fields_json'].initial = '{}'
+        
+        # 在新增時，根據手動輸入的標題調整上月庫存欄位 label
+        if not self.instance or not self.instance.pk:
+            # 這是新增頁面
+            if 'previous_month_inventory_label' in self.data:
+                custom_label = self.data.get('previous_month_inventory_label', '上月庫存')
+                if custom_label.strip():
+                    self.fields['previous_month_inventory'].label = custom_label
+    
+    def clean_dynamic_fields_json(self):
+        """驗證 JSON 格式"""
+        json_str = self.cleaned_data.get('dynamic_fields_json', '{}')
+        if not json_str.strip():
+            return {}
+        
+        try:
+            data = json.loads(json_str)
+            if not isinstance(data, dict):
+                raise forms.ValidationError('JSON 資料必須是一個物件 (字典)')
+            return data
+        except json.JSONDecodeError as e:
+            raise forms.ValidationError(f'JSON 格式錯誤: {str(e)}')
+    
+    def save(self, commit=True):
+        """保存時將 JSON 資料轉換為 dynamic_fields"""
+        instance = super().save(commit=False)
+        instance.dynamic_fields = self.cleaned_data.get('dynamic_fields_json', {})
+        
+        if commit:
+            instance.save()
+        return instance
+
+
 @admin.register(RawMaterialWarehouseRecord)
 class RawMaterialWarehouseRecordAdmin(admin.ModelAdmin):
+    form = RawMaterialWarehouseRecordForm  # 使用自定義表單
+    
     list_display = [
         'product_code', 'product_name', 'factory_batch_number',
-        'standard_weight_kg', 'current_inventory', 'record_date'
+        'standard_weight_kg', 'current_inventory', 'record_date', 'get_dynamic_fields_display'
     ]
     list_filter = [
         'record_date', 'created_at'
@@ -434,8 +499,62 @@ class RawMaterialWarehouseRecordAdmin(admin.ModelAdmin):
         'product_code', 'product_name', 'factory_batch_number',
         'international_batch_number'
     ]
-    readonly_fields = ['id', 'created_at', 'updated_at']
+    readonly_fields = ['id', 'created_at', 'updated_at', 'get_dynamic_fields_formatted']
     date_hierarchy = 'record_date'
+    
+    def get_dynamic_fields_display(self, obj):
+        """在列表中顯示動態欄位的摘要"""
+        if not obj.dynamic_fields:
+            return '-'
+        
+        # 顯示前3個動態欄位
+        fields = list(obj.dynamic_fields.items())[:3]
+        display_text = []
+        for key, value in fields:
+            if value is not None:
+                if isinstance(value, (int, float)):
+                    display_text.append(f"{key}: {value}")
+                else:
+                    display_text.append(f"{key}: {str(value)[:10]}...")
+        
+        if display_text:
+            return format_html('<span title="{}">{}</span>', 
+                             '<br>'.join([f"{k}: {v}" for k, v in obj.dynamic_fields.items() if v is not None]),
+                             '; '.join(display_text))
+        return '-'
+    
+    get_dynamic_fields_display.short_description = '動態欄位'
+    
+    def get_dynamic_fields_formatted(self, obj):
+        """在詳細視圖中格式化顯示動態欄位"""
+        if not obj.dynamic_fields:
+            return '無動態欄位資料'
+        
+        html_parts = ['<div style="max-height: 300px; overflow-y: auto;">']
+        html_parts.append('<table style="width: 100%; border-collapse: collapse;">')
+        html_parts.append('<tr style="background-color: #f8f9fa;">')
+        html_parts.append('<th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">欄位名稱</th>')
+        html_parts.append('<th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">數值</th>')
+        html_parts.append('</tr>')
+        
+        for key, value in obj.dynamic_fields.items():
+            html_parts.append('<tr>')
+            html_parts.append(f'<td style="border: 1px solid #dee2e6; padding: 8px; font-weight: bold;">{key}</td>')
+            if value is None:
+                html_parts.append('<td style="border: 1px solid #dee2e6; padding: 8px; color: #6c757d;">無資料</td>')
+            elif isinstance(value, (int, float)):
+                html_parts.append(f'<td style="border: 1px solid #dee2e6; padding: 8px; text-align: right;">{value}</td>')
+            else:
+                html_parts.append(f'<td style="border: 1px solid #dee2e6; padding: 8px;">{value}</td>')
+            html_parts.append('</tr>')
+        
+        html_parts.append('</table>')
+        html_parts.append('</div>')
+        
+        return format_html(''.join(html_parts))
+    
+    get_dynamic_fields_formatted.short_description = '動態欄位資料'
+    
     def has_module_permission(self, request):
         perms = [
             'app.view_rawmaterialwarehouserecord', 'app.add_rawmaterialwarehouserecord', 'app.change_rawmaterialwarehouserecord', 'app.delete_rawmaterialwarehouserecord'
@@ -454,33 +573,73 @@ class RawMaterialWarehouseRecordAdmin(admin.ModelAdmin):
         """只有有 delete 權限的用戶才能刪除"""
         return request.user.is_superuser or request.user.has_perm('app.delete_rawmaterialwarehouserecord')
     
+    def changelist_view(self, request, extra_context=None):
+        """自定義列表視圖，添加上傳功能的連結"""
+        extra_context = extra_context or {}
+        extra_context.update({
+            'upload_url': '/erp/raw-material-records/upload/',
+            'upload_records_url': '/erp/raw-material-records/uploads/',
+            'show_upload_button': True,
+            'custom_buttons': [
+                {
+                    'url': '#',
+                    'title': '暫無功能',
+                    'icon': 'fas fa-ban',
+                    'class': 'btn btn-secondary',
+                }
+            ]
+        })
+        return super().changelist_view(request, extra_context=extra_context)
+    
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        """自定義編輯視圖，隱藏「儲存並繼續新增」按鈕"""
+        extra_context = extra_context or {}
+        extra_context['show_save_and_add_another'] = False
+        return super().change_view(request, object_id, form_url, extra_context)
+    
+    def add_view(self, request, form_url='', extra_context=None):
+        """自定義新增視圖，隱藏「儲存並繼續新增」按鈕"""
+        extra_context = extra_context or {}
+        extra_context['show_save_and_add_another'] = False
+        return super().add_view(request, form_url, extra_context)
+    
     fieldsets = (
         ('基本資訊', {
             'fields': (
-                'product_code', 'product_name', 'factory_batch_number',
-                'international_batch_number', 'standard_weight_kg'
+                'product_code', 'product_name', 'factory_batch_number', 'international_batch_number'
+            )
+        }),
+        ('重量資訊', {
+            'fields': (
+                'standard_weight_kg',
             )
         }),
         ('庫存資訊', {
             'fields': (
-                'previous_month_inventory', 'incoming_stock',
-                'outgoing_stock', 'current_inventory'
+                'previous_month_inventory', 'incoming_stock', 'outgoing_stock', 'current_inventory'
             )
         }),
-        ('處理狀態', {
-            'fields': (
-                'pending_processing', 'opened_quality_external_remaining',
-                'external_sales'
-            )
+        ('動態欄位編輯', {
+            'fields': ('dynamic_fields_json',),
+            'classes': ('collapse',),
+            'description': '使用 JSON 格式編輯動態欄位，包括日期相關的入庫、領用、轉出等資料（進階功能）'
         }),
-        ('時間資訊', {
-            'fields': ('record_date',)
+        ('動態欄位顯示', {
+            'fields': ('get_dynamic_fields_formatted',),
+            'classes': ('collapse',),
+            'description': '顯示當前動態欄位的格式化內容（唯讀）'
         }),
         ('系統資訊', {
-            'fields': ('id', 'created_at', 'updated_at'),
+            'fields': ('record_date', 'id', 'created_at', 'updated_at'),
             'classes': ('collapse',)
-        })
+        }),
     )
+    
+    class Media:
+        css = {
+            'all': ('admin/css/custom_admin.css',)
+        }
+        js = ('admin/js/dynamic_fields_editor.js',)
 
 
 @admin.register(RawMaterialMonthlySummary)
@@ -582,7 +741,12 @@ class FileUploadRecordAdmin(admin.ModelAdmin):
                             deleted_record_ids.append(str(record.id))
                             record.delete()
                             record_deleted_count += 1
-                    except GreenBeanInboundRecord.DoesNotExist:
+                        elif relation.content_type == 'raw_material':
+                            record = RawMaterialWarehouseRecord.objects.get(id=relation.object_id)
+                            deleted_record_ids.append(str(record.id))
+                            record.delete()
+                            record_deleted_count += 1
+                    except (GreenBeanInboundRecord.DoesNotExist, RawMaterialWarehouseRecord.DoesNotExist):
                         pass
                 
                 # 刪除關聯記錄
@@ -594,16 +758,24 @@ class FileUploadRecordAdmin(admin.ModelAdmin):
                     for record_id in upload_record.created_record_ids:
                         if str(record_id) not in deleted_record_ids:  # 避免重複刪除
                             try:
+                                # 嘗試刪除生豆記錄
                                 record = GreenBeanInboundRecord.objects.get(id=record_id)
                                 record.delete()
                                 record_deleted_count += 1
                                 deleted_record_ids.append(str(record_id))
                             except GreenBeanInboundRecord.DoesNotExist:
-                                pass
+                                try:
+                                    # 嘗試刪除原料倉記錄
+                                    record = RawMaterialWarehouseRecord.objects.get(id=record_id)
+                                    record.delete()
+                                    record_deleted_count += 1
+                                    deleted_record_ids.append(str(record_id))
+                                except RawMaterialWarehouseRecord.DoesNotExist:
+                                    pass
                 
                 # 清理可能存在的其他孤立關聯
                 other_relations = UploadRecordRelation.objects.filter(
-                    content_type='green_bean',
+                    content_type__in=['green_bean', 'raw_material'],
                     object_id__in=deleted_record_ids
                 ).exclude(upload_record=upload_record)
                 
@@ -635,14 +807,16 @@ class FileUploadRecordAdmin(admin.ModelAdmin):
         remaining_upload_count = FileUploadRecord.objects.count()
         if remaining_upload_count == 0:
             # 沒有上傳記錄了，清理所有可能的孤立記錄
-            orphaned_records = GreenBeanInboundRecord.objects.all()
-            additional_deleted = orphaned_records.count()
+            orphaned_green_bean_records = GreenBeanInboundRecord.objects.all()
+            orphaned_raw_material_records = RawMaterialWarehouseRecord.objects.all()
+            additional_deleted = orphaned_green_bean_records.count() + orphaned_raw_material_records.count()
             if additional_deleted > 0:
-                orphaned_records.delete()
+                orphaned_green_bean_records.delete()
+                orphaned_raw_material_records.delete()
                 deleted_records += additional_deleted
                 
             # 清理所有關聯記錄
-            all_relations = UploadRecordRelation.objects.filter(content_type='green_bean')
+            all_relations = UploadRecordRelation.objects.filter(content_type__in=['green_bean', 'raw_material'])
             additional_relations = all_relations.count()
             if additional_relations > 0:
                 all_relations.delete()
@@ -675,7 +849,12 @@ class FileUploadRecordAdmin(admin.ModelAdmin):
                         deleted_record_ids.append(str(record.id))
                         record.delete()
                         deleted_records += 1
-                except GreenBeanInboundRecord.DoesNotExist:
+                    elif relation.content_type == 'raw_material':
+                        record = RawMaterialWarehouseRecord.objects.get(id=relation.object_id)
+                        deleted_record_ids.append(str(record.id))
+                        record.delete()
+                        deleted_records += 1
+                except (GreenBeanInboundRecord.DoesNotExist, RawMaterialWarehouseRecord.DoesNotExist):
                     pass
             
             # 刪除關聯記錄
@@ -687,16 +866,24 @@ class FileUploadRecordAdmin(admin.ModelAdmin):
                 for record_id in obj.created_record_ids:
                     if str(record_id) not in deleted_record_ids:  # 避免重複刪除
                         try:
+                            # 嘗試刪除生豆記錄
                             record = GreenBeanInboundRecord.objects.get(id=record_id)
                             record.delete()
                             deleted_records += 1
                             deleted_record_ids.append(str(record_id))
                         except GreenBeanInboundRecord.DoesNotExist:
-                            pass
+                            try:
+                                # 嘗試刪除原料倉記錄
+                                record = RawMaterialWarehouseRecord.objects.get(id=record_id)
+                                record.delete()
+                                deleted_records += 1
+                                deleted_record_ids.append(str(record_id))
+                            except RawMaterialWarehouseRecord.DoesNotExist:
+                                pass
             
             # 清理可能存在的其他孤立關聯
             other_relations = UploadRecordRelation.objects.filter(
-                content_type='green_bean',
+                content_type__in=['green_bean', 'raw_material'],
                 object_id__in=deleted_record_ids
             ).exclude(upload_record=obj)
             
@@ -707,18 +894,39 @@ class FileUploadRecordAdmin(admin.ModelAdmin):
             remaining_upload_count = FileUploadRecord.objects.exclude(id=obj.id).count()
             if remaining_upload_count == 0:
                 # 這是最後一個上傳記錄，清理所有可能的孤立記錄
-                orphaned_records = GreenBeanInboundRecord.objects.all()
-                additional_deleted = orphaned_records.count()
+                orphaned_green_bean_records = GreenBeanInboundRecord.objects.all()
+                orphaned_raw_material_records = RawMaterialWarehouseRecord.objects.all()
+                additional_deleted = orphaned_green_bean_records.count() + orphaned_raw_material_records.count()
                 if additional_deleted > 0:
-                    orphaned_records.delete()
+                    orphaned_green_bean_records.delete()
+                    orphaned_raw_material_records.delete()
                     deleted_records += additional_deleted
                     
                 # 清理所有關聯記錄
-                all_relations = UploadRecordRelation.objects.filter(content_type='green_bean')
+                all_relations = UploadRecordRelation.objects.filter(content_type__in=['green_bean', 'raw_material'])
                 additional_relations = all_relations.count()
                 if additional_relations > 0:
                     all_relations.delete()
                     deleted_relations += additional_relations
+                
+                # 檢查是否還有其他上傳記錄，如果沒有則清理所有孤立記錄
+                remaining_upload_count = FileUploadRecord.objects.count()
+                if remaining_upload_count == 0:
+                    # 沒有上傳記錄了，清理所有可能的孤立記錄
+                    orphaned_green_bean_records = GreenBeanInboundRecord.objects.all()
+                    orphaned_raw_material_records = RawMaterialWarehouseRecord.objects.all()
+                    additional_deleted = orphaned_green_bean_records.count() + orphaned_raw_material_records.count()
+                    if additional_deleted > 0:
+                        orphaned_green_bean_records.delete()
+                        orphaned_raw_material_records.delete()
+                        deleted_records += additional_deleted
+                        
+                    # 清理所有關聯記錄
+                    all_relations = UploadRecordRelation.objects.filter(content_type__in=['green_bean', 'raw_material'])
+                    additional_relations = all_relations.count()
+                    if additional_relations > 0:
+                        all_relations.delete()
+                        deleted_relations += additional_relations
             
             # 記錄活動
             log_user_activity(
@@ -796,6 +1004,7 @@ class GroupAdmin(BaseGroupAdmin):
     list_display = ['name', 'get_permissions_count', 'get_users_count']
     search_fields = ['name']
     filter_horizontal = ['permissions']
+    
     def has_module_permission(self, request):
         # 只有 superuser 才能看到群組管理模組
         return request.user.is_superuser
@@ -833,11 +1042,13 @@ class GroupAdmin(BaseGroupAdmin):
         extra_context['show_erp_link'] = True
         return super().changelist_view(request, extra_context=extra_context)
     
-    class Media:
-        css = {
-            'all': ('admin/css/custom_group_admin.css',)
-        }
-        js = ('admin/js/custom_group_admin.js',)
+    # 移除 Media 類別，因為檔案不存在
+    # class Media:
+    #     css = {
+    #         'all': ('admin/css/custom_group_admin.css',)
+    #     }
+    #     js = ('admin/js/custom_group_admin.js',)
+    
     fieldsets = (
         ('基本資訊', {
             'fields': ('name',)

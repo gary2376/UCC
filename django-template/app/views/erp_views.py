@@ -13,10 +13,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from datetime import datetime, timedelta
+from typing import Any
 import json
 import hashlib
 import pandas as pd
 import os
+import re
+import math
+import io
+import calendar
 
 from app.models.models import GreenBeanInboundRecord, RawMaterialWarehouseRecord, RawMaterialMonthlySummary, UserActivityLog, FileUploadRecord, UploadRecordRelation
 from app.serializers.user_serializer import (
@@ -405,8 +410,7 @@ def production_statistics_api(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@login_required
-@permission_required('app.view_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('view')
 def green_bean_records_view(request):
     """生豆入庫記錄頁面視圖"""
     # 獲取所有記錄
@@ -473,8 +477,7 @@ def green_bean_records_view(request):
     return render(request, 'erp/green_bean_records.html', context)
 
 
-@login_required
-@permission_required('app.add_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('add')
 def green_bean_upload_page(request):
     """生豆入庫記錄上傳頁面"""
     return render(request, 'erp/import_data.html', {
@@ -484,8 +487,7 @@ def green_bean_upload_page(request):
     })
 
 
-@login_required
-@permission_required('app.add_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('add')
 @csrf_exempt
 @require_http_methods(["POST"])
 def green_bean_upload_file(request):
@@ -742,8 +744,7 @@ def calculate_file_hash(file):
     return hash_md5.hexdigest()
 
 
-@login_required
-@permission_required('app.delete_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('delete')
 @csrf_exempt
 @require_http_methods(["POST"])
 def delete_green_bean_record(request, record_id):
@@ -791,8 +792,7 @@ def delete_green_bean_record(request, record_id):
         })
 
 
-@login_required
-@permission_required('app.delete_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('delete')
 @csrf_exempt
 @require_http_methods(["POST"])
 def batch_delete_green_bean_records(request):
@@ -835,8 +835,7 @@ def batch_delete_green_bean_records(request):
         })
 
 
-@login_required
-@permission_required('app.delete_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('delete')
 @require_http_methods(["DELETE"])
 def delete_upload_record(request, upload_id):
     """刪除上傳記錄及相關的資料庫記錄"""
@@ -1188,8 +1187,7 @@ def activity_log_view(request):
     return render(request, 'erp/activity_log.html', context)
 
 
-@login_required
-@permission_required('app.add_greenbeaninboundrecord', raise_exception=True)
+@require_green_bean_permission('add')
 @csrf_exempt
 @require_http_methods(["POST"])
 def add_green_bean_record(request):
@@ -1411,3 +1409,703 @@ def green_bean_names_api(request):
             'success': False,
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@require_raw_material_permission('add')
+def raw_material_upload_page(request):
+    """原料倉管理上傳頁面"""
+    return render(request, 'erp/raw_material_import.html', {
+        'title': '原料倉管理上傳',
+        'upload_url': '/erp/raw-material-records/upload-file/',
+        'records_url': '/erp/raw-material-records/uploads/'
+    })
+
+
+@require_raw_material_permission('add')
+@csrf_exempt
+@require_http_methods(["POST"])
+def raw_material_upload_file(request):
+    """原料倉管理檔案上傳處理"""
+    try:
+        uploaded_file = request.FILES.get('file')
+        
+        if not uploaded_file:
+            return JsonResponse({'success': False, 'message': '請選擇要上傳的檔案'})
+        
+        # 檢查檔案格式
+        if not uploaded_file.name.lower().endswith(('.xlsx', '.xls')):
+            return JsonResponse({'success': False, 'message': '只支援 .xlsx 和 .xls 格式的檔案'})
+        
+        # 計算檔案雜湊值（在事務外）
+        file_hash = calculate_file_hash(uploaded_file)
+        
+        # 檢查是否為重複檔案（在事務外）
+        existing_file = FileUploadRecord.objects.filter(file_hash=file_hash).first()
+        if existing_file:
+            return JsonResponse({
+                'success': False, 
+                'message': f'此檔案已於 {existing_file.upload_time.strftime("%Y-%m-%d %H:%M")} 上傳過',
+                'duplicate': True
+            })
+        
+        # 將檔案內容讀取到記憶體中（在事務外）
+        file_content = uploaded_file.read()
+        uploaded_file.seek(0)  # 重置檔案指針
+        
+        # 使用事務處理整個上傳過程
+        with transaction.atomic():
+            # 創建上傳記錄
+            upload_record = FileUploadRecord.objects.create(
+                file_name=uploaded_file.name,
+                file_hash=file_hash,
+                file_size=uploaded_file.size,
+                uploaded_by=request.user,
+                file_type='raw_material',
+                status='pending'
+            )
+            
+            # 使用 openpyxl 處理 Excel 檔案（與 test_excel_to_json.py 相同的邏輯）
+            from openpyxl import load_workbook
+            
+            wb = load_workbook(io.BytesIO(file_content), data_only=True)
+            ws = wb.active
+            
+            # 展開合併的儲存格
+            def expand_merged_cells(ws):
+                merged_ranges = list(ws.merged_cells.ranges)
+                for merged_range in merged_ranges:
+                    min_col, min_row, max_col, max_row = merged_range.bounds
+                    value = ws.cell(row=min_row, column=min_col).value
+                    ws.unmerge_cells(start_row=min_row, start_column=min_col, end_row=max_row, end_column=max_col)
+                    for row in range(min_row, max_row + 1):
+                        for col in range(min_col, max_col + 1):
+                            ws.cell(row=row, column=col).value = value
+            
+            expand_merged_cells(ws)
+            
+            # 從檔案名稱提取月份資訊（與 test_excel_to_json.py 相同）
+            def extract_month_from_filename(filename: str) -> int:
+                """從檔案名稱提取月份資訊"""
+                # 匹配模式：原料倉進出a2023-11.xlsx 中的 11
+                pattern = r'原料倉進出a\d{4}-(\d{1,2})'
+                match = re.search(pattern, filename)
+                if match:
+                    return int(match.group(1))
+                else:
+                    # 如果沒有匹配到，嘗試其他模式
+                    pattern2 = r'-(\d{1,2})\.'
+                    match2 = re.search(pattern2, filename)
+                    if match2:
+                        return int(match2.group(1))
+                    else:
+                        raise ValueError(f"無法從檔案名稱 {filename} 提取月份資訊")
+            
+            # 自動尋找標題列和子標題列
+            def find_header_rows(ws) -> tuple[int, int]:
+                header_row = None
+                sub_header_row = None
+                
+                for row_num in range(1, 15):  # 檢查前15列
+                    row_values = [cell.value for cell in ws[row_num]]
+                    row_str = ' '.join(str(v) for v in row_values if v is not None)
+                    
+                    # 尋找主標題列（包含品號、品名）
+                    if '品號' in row_str and '品名' in row_str and header_row is None:
+                        header_row = row_num
+                        
+                    # 尋找子標題列（包含入庫、領用、轉出）
+                    if '入庫' in row_str and '領用' in row_str and '轉出' in row_str:
+                        sub_header_row = row_num
+                        
+                    # 如果找到主標題列，檢查下一列是否為子標題
+                    if header_row is not None and sub_header_row is None:
+                        next_row_values = [cell.value for cell in ws[header_row + 1]]
+                        next_row_str = ' '.join(str(v) for v in next_row_values if v is not None)
+                        if '入庫' in next_row_str or '領用' in next_row_str or '轉出' in next_row_str:
+                            sub_header_row = header_row + 1
+                
+                if header_row is None:
+                    header_row = 2  # 預設第二列
+                if sub_header_row is None:
+                    sub_header_row = header_row + 1  # 預設主標題列後一列
+                    
+                return header_row, sub_header_row
+            
+            def find_data_start_row(ws, sub_header_row: int) -> int:
+                for row_num in range(sub_header_row + 1, sub_header_row + 10):
+                    row_values = [cell.value for cell in ws[row_num]]
+                    if any(v is not None for v in row_values):
+                        return row_num
+                return sub_header_row + 2
+            
+            def clean_column_names(columns: list[Any]) -> list[str]:
+                cleaned = []
+                for col in columns:
+                    if col is None:
+                        cleaned.append(None)
+                    else:
+                        cleaned_name = str(col).strip().replace('\n', ' ').replace('\r', ' ')
+                        cleaned_name = ' '.join(cleaned_name.split())
+                        cleaned.append(cleaned_name)
+                return cleaned
+            
+            def merge_headers(main_headers: list[str], sub_headers: list[str]) -> list[str]:
+                """合併主標題和子標題"""
+                merged_headers = []
+                seen_fields = set()  # 追蹤已見過的欄位名稱
+                
+                for i, (main_header, sub_header) in enumerate(zip(main_headers, sub_headers)):
+                    if main_header is None or main_header == '':
+                        # 處理只有子標題的情況
+                        if sub_header is None or sub_header == '':
+                            merged_headers.append(None)
+                        else:
+                            field_name = sub_header
+                            # 檢查是否應該是小計的子欄位
+                            if sub_header in ['入庫', '轉出'] and i > 0:
+                                # 檢查前面是否有小計欄位
+                                prev_main = main_headers[i-1] if i > 0 else None
+                                if prev_main == '小計':
+                                    field_name = f"小計_{sub_header}"
+                                elif prev_main == '盤盈虧(外賣)':
+                                    # 如果前面是盤盈虧(外賣)，且當前是入庫或轉出，則視為小計的子欄位
+                                    field_name = f"小計_{sub_header}"
+                            
+                            if field_name in seen_fields:
+                                field_name = f"{field_name}_after"
+                            seen_fields.add(field_name)
+                            merged_headers.append(field_name)
+                    elif sub_header is None or sub_header == '':
+                        # 處理只有主標題的情況
+                        field_name = main_header
+                        # 過濾掉不存在的欄位
+                        if field_name in ['待處理', '外賣', '盤盈虧(外賣)']:
+                            field_name = None
+                        else:
+                            if field_name in seen_fields:
+                                field_name = f"{main_header}_after"
+                            seen_fields.add(field_name)
+                        merged_headers.append(field_name)
+                    else:
+                        # 處理主標題和子標題都存在的情況
+                        if any(char.isdigit() for char in str(main_header)) and '/' in str(main_header):
+                            # 日期格式的主標題
+                            field_name = f"{main_header}_{sub_header}"
+                        elif main_header == '盤盈虧(外賣)':
+                            # 盤盈虧(外賣) 下的子欄位
+                            field_name = f"{main_header}_{sub_header}"
+                        elif main_header == '小計':
+                            # 小計欄位下的子欄位
+                            field_name = f"{main_header}_{sub_header}"
+                        elif main_header == '領用' and sub_header == '小計':
+                            # 領用_小計 特殊欄位
+                            field_name = f"{main_header}_{sub_header}"
+                        elif sub_header in ['入庫', '領用', '轉出'] and main_header == '小計':
+                            # 小計下的入庫、領用、轉出子欄位
+                            field_name = f"{main_header}_{sub_header}"
+                        else:
+                            # 一般主標題
+                            field_name = main_header
+                            
+                            # 過濾掉不存在的欄位
+                            if field_name in ['待處理', '外賣']:
+                                field_name = None
+                        
+                        # 檢查是否重複
+                        if field_name in seen_fields:
+                            field_name = f"{field_name}_after"
+                        seen_fields.add(field_name)
+                        merged_headers.append(field_name)
+                
+                return merged_headers
+            
+            def analyze_column_structure(columns: list[str], file_month: int) -> dict:
+                """分析欄位結構，識別月份欄位等"""
+                analysis = {
+                    'month_inventory': None,  # 月份庫存欄位
+                    'basic_fields': [],       # 基本欄位
+                    'date_fields': [],        # 日期欄位
+                    'summary_fields': [],     # 小計欄位
+                    'file_month': file_month, # 檔案月份
+                    'found_months': []        # 找到的所有月份欄位
+                }
+                
+                # 預期的月份庫存欄位名稱
+                expected_month_inventory = f"{file_month}月庫存"
+                
+                for col in columns:
+                    if col is None:
+                        continue
+                        
+                    col_str = str(col)
+                    
+                    # 識別所有月份庫存欄位（只匹配實際存在的格式）
+                    month_match = re.search(r'(\d+)月\s*庫存', col_str)
+                    if month_match:
+                        found_month = int(month_match.group(1))
+                        # 只處理實際存在的月份欄位，避免產生不存在的欄位
+                        if col_str in [f"{found_month}月 庫存", f"{found_month}月庫存"]:
+                            analysis['found_months'].append((col, found_month))
+                            
+                            # 如果是檔案對應的月份，設為主要月份庫存欄位
+                            if found_month == file_month:
+                                analysis['month_inventory'] = col
+                            # 如果還沒找到主要月份欄位，使用找到的第一個
+                            elif analysis['month_inventory'] is None:
+                                analysis['month_inventory'] = col
+                            
+                    # 識別 *月**日 庫存 欄位
+                    elif col_str == '*月**日 庫存':
+                        analysis['month_inventory'] = col
+                            
+                    # 識別基本欄位
+                    elif col_str in ['品號', '品名', '工廠批號', '國際批號', '公斤', '包數']:
+                        analysis['basic_fields'].append(col)
+                    # 識別日期欄位
+                    elif re.search(r'\d+/\d+', col_str):
+                        analysis['date_fields'].append(col)
+                    # 識別小計欄位
+                    elif '小計' in col_str:
+                        analysis['summary_fields'].append(col)
+                
+                return analysis
+            
+            def is_numeric_field(field_name: str) -> bool:
+                """判斷欄位是否為數值型別"""
+                numeric_patterns = [
+                    r'公斤$',
+                    r'進貨$',
+                    r'領用$',
+                    r'轉出$',
+                    r'入庫$',
+                    r'小計$',
+                    r'包數$',
+                    r'盤盈虧',
+                    r'^\d+/\d+',  # 日期格式的數值欄位
+                    r'^\d+/\d+掛\d+/\d+帳',  # 特殊日期格式
+                    r'^\*月\*\*日 庫存',  # 動態月份庫存
+                    r'包數_after$',  # 包數_after
+                    r'\*月\*\*日 庫存_after$',  # 動態月份庫存_after
+                ]
+                
+                for pattern in numeric_patterns:
+                    if re.search(pattern, field_name):
+                        return True
+                return False
+            
+            # 從檔案名稱提取月份
+            try:
+                file_month = extract_month_from_filename(uploaded_file.name)
+                print(f"從檔案名稱提取的月份: {file_month}月")
+            except ValueError:
+                file_month = 11  # 預設值
+                print(f"無法從檔案名稱提取月份，使用預設值: {file_month}月")
+            
+            # 自動尋找標題列和子標題列
+            header_row, sub_header_row = find_header_rows(ws)
+            print(f"找到主標題列: 第 {header_row} 列")
+            print(f"找到子標題列: 第 {sub_header_row} 列")
+            
+            # 抓取主標題和子標題
+            main_headers = [cell.value for cell in ws[header_row]]
+            sub_headers = [cell.value for cell in ws[sub_header_row]]
+            
+            # 清理欄位名稱
+            main_headers = clean_column_names(main_headers)
+            sub_headers = clean_column_names(sub_headers)
+            
+            print(f"主標題: {main_headers}")
+            print(f"子標題: {sub_headers}")
+            
+            # 合併標題
+            all_columns = merge_headers(main_headers, sub_headers)
+            print(f"合併後欄位名稱: {all_columns}")
+            
+            # 分析欄位結構（與 test_excel_to_json.py 相同）
+            column_analysis = analyze_column_structure(all_columns, file_month)
+            print(f"\n欄位結構分析:")
+            print(f"檔案月份: {column_analysis['file_month']}月")
+            print(f"主要月份庫存欄位: {column_analysis['month_inventory']}")
+            print(f"找到的所有月份欄位: {column_analysis['found_months']}")
+            print(f"基本欄位: {column_analysis['basic_fields']}")
+            print(f"日期欄位數量: {len(column_analysis['date_fields'])}")
+            print(f"小計欄位: {column_analysis['summary_fields']}")
+            
+            # 尋找資料開始列
+            data_start_row = find_data_start_row(ws, sub_header_row)
+            print(f"資料開始列: 第 {data_start_row} 列")
+            
+            # 定義helper函數（與生豆入庫相同）
+            def safe_numeric(value, default=None):
+                if value is None or str(value).strip() in ['', 'nan', 'None']:
+                    return default
+                try:
+                    result = float(value)
+                    if math.isnan(result):
+                        return default
+                    return result
+                except:
+                    return default
+            
+            def safe_string(value, default=''):
+                if value is None or str(value).strip() in ['nan', 'None']:
+                    return default
+                return str(value).strip()
+            
+            def safe_string_from_numeric(value, default=''):
+                """處理可能是數字的字符串欄位"""
+                if value is None or str(value).strip() in ['nan', 'None']:
+                    return default
+                try:
+                    if isinstance(value, (int, float)):
+                        return str(int(value))
+                    return str(value).strip()
+                except:
+                    return str(value).strip()
+            
+            def safe_integer(value, default=None):
+                """安全轉換為整數"""
+                if value is None or str(value).strip() in ['', 'nan', 'None']:
+                    return default
+                try:
+                    result = float(value)
+                    if math.isnan(result):
+                        return default
+                    return int(result)
+                except:
+                    return default
+            
+            # 處理資料 - 完全使用 test_excel_to_json.py 的邏輯
+            created_records = []
+            skipped_rows = 0
+            row_count = 0
+            
+            # 定義 RawMaterialRow.from_row 方法（與 test_excel_to_json.py 完全相同）
+            def from_row(row: list[Any], columns: list[str]) -> dict:
+                data = {}
+                for col_name, value in zip(columns, row):
+                    if col_name is None:
+                        continue
+                    col_name = str(col_name).strip().replace('\n', ' ')  # 清理換行符號
+                    key = '公斤' if col_name == '標準重' else col_name
+                    # 自動型別轉換
+                    if key == '包數':
+                        try:
+                            data[key] = math.ceil(float(value)) if value is not None else None
+                        except (TypeError, ValueError):
+                            data[key] = None
+                    elif is_numeric_field(key):
+                        try:
+                            data[key] = float(value) if value is not None else None
+                        except (TypeError, ValueError):
+                            data[key] = None
+                    else:
+                        data[key] = str(value) if value is not None else None
+                return data
+            
+            for row in ws.iter_rows(min_row=data_start_row):
+                row_count += 1
+                try:
+                    values = [cell.value for cell in row]
+                    # 若全為 None 則跳過
+                    if all(v is None for v in values):
+                        continue
+                    
+                    # 使用與 test_excel_to_json.py 完全相同的 from_row 方法
+                    row_data = from_row(values, all_columns)
+                    
+                    # 只保留公斤有值的資料（與 test_excel_to_json.py 完全一致）
+                    if row_data.get('公斤') is None:
+                        print(f"跳過第 {row_count} 行：公斤為空")
+                        skipped_rows += 1
+                        continue
+                    
+                    # 獲取品號和品名（不檢查是否為空，與 test_excel_to_json.py 一致）
+                    product_code = str(row_data.get('品號', '')).strip()
+                    product_name = str(row_data.get('品名', '')).strip()
+                    
+                    print(f"處理第 {row_count} 行: 品號='{product_code}', 品名='{product_name}', 公斤='{row_data.get('公斤')}'")
+                    
+                    # 分離基本欄位和動態欄位
+                    basic_fields = {
+                        'product_code': product_code,
+                        'product_name': product_name,
+                        'factory_batch_number': str(row_data.get('工廠批號', '')) if row_data.get('工廠批號') is not None else '',
+                        'international_batch_number': str(row_data.get('國際批號', '')) if row_data.get('國際批號') is not None else '',
+                        'standard_weight_kg': row_data.get('公斤', 0) or 0,
+                        'record_date': datetime.now().date()
+                    }
+                    
+                    # 處理月庫存欄位（根據檔名動態變化）
+                    file_month = extract_month_from_filename(uploaded_file.name)
+                    file_year = int(re.search(r'(\d{4})-\d{1,2}', uploaded_file.name).group(1)) if re.search(r'(\d{4})-\d{1,2}', uploaded_file.name) else datetime.now().year
+                    import calendar
+                    
+                    # 上月庫存為檔名月份-2
+                    prev2_month = (file_month - 2) % 12 or 12
+                    prev2_year = file_year if file_month > 2 else file_year - 1
+                    previous_month_key = f"{prev2_month}月 庫存"
+                    
+                    # 調試輸出
+                    print(f"檔名月份: {file_month}, 上月庫存欄位: {previous_month_key}")
+                    print(f"可用的欄位: {list(row_data.keys())}")
+                    
+                    # 將基本欄位也放入基本欄位中
+                    basic_fields.update({
+                        'previous_month_inventory': row_data.get(previous_month_key, 0) or 0,  # 上月庫存
+                        'incoming_stock': row_data.get('進貨', 0) or 0,  # 進貨
+                        'outgoing_stock': row_data.get('領用', 0) or 0,  # 領用
+                        'current_inventory': row_data.get('*月**日 庫存', 0) or 0,  # 當前庫存
+                    })
+                    
+                    # 收集所有動態欄位（只包含上方基本欄位中沒有的內容）
+                    dynamic_fields = {}
+                    
+                    # 排除所有基本欄位，只保留日期相關欄位和其他特殊欄位
+                    basic_field_names = [
+                        '品號', '品名', '工廠批號', '國際批號', '公斤', '包數',
+                        '進貨', '領用', previous_month_key, '*月**日 庫存'
+                    ]
+                    
+                    # 定義允許的動態欄位模式（更嚴格）
+                    allowed_dynamic_patterns = [
+                        r'^\d+/\d+掛\d+/\d+帳_',  # 10/31掛11/1帳_入庫
+                        r'^\d+/\d+_',  # 11/1_入庫, 11/1_領用, 11/1_轉出
+                        r'^盤盈虧\(外賣\)_',  # 盤盈虧(外賣)_入庫
+                        r'^小計_',  # 小計_入庫, 小計_領用, 小計_轉出
+                        r'^領用_小計$',  # 領用_小計
+                        r'^\*月\*\*日 庫存_after$',  # *月**日 庫存_after
+                        r'^包數_after$',  # 包數_after
+                    ]
+                    
+                    # 明確排除的欄位
+                    excluded_fields = {
+                        '待處理', '外賣', '盤盈虧(外賣)',  # 這些欄位不應該存在
+                    }
+                    
+                    # 排除所有月份庫存欄位（除了當前動態產生的）
+                    for key in list(row_data.keys()):
+                        if re.match(r'^\d+月\s*庫存$', key) and key != previous_month_key:
+                            excluded_fields.add(key)
+                    
+                    # 產生正確的日期動態欄位名稱（根據檔名）
+                    days_in_month = calendar.monthrange(file_year, file_month)[1]
+                    correct_date_fields = {}
+                    
+                    # 產生本月日期欄位
+                    for day in range(1, days_in_month + 1):
+                        for t in ['入庫', '領用', '轉出']:
+                            correct_key = f"{file_month}/{day}_{t}"
+                            # 尋找對應的原始欄位（可能是任何日期的欄位）
+                            for original_key, original_value in row_data.items():
+                                if re.match(r'^\d+/\d+_' + t + '$', original_key):
+                                    correct_date_fields[correct_key] = original_value
+                                    break
+                    
+                    # 產生跨月欄位（前一月最後一天掛本月1日帳）
+                    prev_month = (file_month - 1) % 12 or 12
+                    prev_month_year = file_year if file_month > 1 else file_year - 1
+                    prev_month_last_day = calendar.monthrange(prev_month_year, prev_month)[1]
+                    for t in ['入庫', '領用', '轉出']:
+                        correct_key = f"{prev_month}/{prev_month_last_day}掛{file_month}/1帳_{t}"
+                        # 尋找對應的原始跨月欄位
+                        for original_key, original_value in row_data.items():
+                            if re.match(r'^\d+/\d+掛\d+/\d+帳_' + t + '$', original_key):
+                                correct_date_fields[correct_key] = original_value
+                                break
+                    
+                    for key, value in row_data.items():
+                        # 跳過基本欄位和明確排除的欄位
+                        if key in basic_field_names or key in excluded_fields:
+                            continue
+                            
+                        # 檢查是否為允許的動態欄位
+                        is_allowed = False
+                        for pattern in allowed_dynamic_patterns:
+                            if re.match(pattern, key):
+                                is_allowed = True
+                                break
+                        
+                        if is_allowed:
+                            # 如果是日期相關欄位，使用正確的欄位名稱
+                            if re.match(r'^\d+/\d+', key) or re.match(r'^\d+/\d+掛\d+/\d+帳_', key):
+                                # 日期欄位已經在 correct_date_fields 中處理
+                                continue
+                            else:
+                                # 非日期欄位，直接使用
+                                if is_numeric_field(key):
+                                    dynamic_fields[key] = float(value) if value is not None else None
+                                else:
+                                    dynamic_fields[key] = str(value) if value is not None else None
+                    
+                    # 將正確的日期欄位加入動態欄位
+                    for correct_key, value in correct_date_fields.items():
+                        if is_numeric_field(correct_key):
+                            dynamic_fields[correct_key] = float(value) if value is not None else None
+                        else:
+                            dynamic_fields[correct_key] = str(value) if value is not None else None
+                    
+                    # 調試輸出
+                    print(f"動態欄位數量: {len(dynamic_fields)}")
+                    if dynamic_fields:
+                        print(f"動態欄位範例: {list(dynamic_fields.items())[:3]}")
+                    
+                    # 建立記錄（包含動態欄位）
+                    record = RawMaterialWarehouseRecord.objects.create(
+                        **basic_fields,
+                        dynamic_fields=dynamic_fields
+                    )
+                    
+                    created_records.append(record)
+                    print(f"成功創建記錄: {record.product_code} - {record.product_name}")
+                    
+                    # 創建關聯記錄
+                    UploadRecordRelation.objects.create(
+                        upload_record=upload_record,
+                        content_type='raw_material',
+                        object_id=record.id
+                    )
+                    
+                except Exception as e:
+                    print(f"處理第 {row_count} 行時發生錯誤: {str(e)}")
+                    continue
+            
+            print(f"總共處理了 {row_count} 行，跳過了 {skipped_rows} 行，成功創建了 {len(created_records)} 筆記錄")
+            
+            # 更新上傳記錄狀態
+            upload_record.status = 'success'
+            upload_record.records_count = len(created_records)
+            upload_record.created_record_ids = [str(record.id) for record in created_records]
+            upload_record.save()
+        
+        # 記錄用戶活動（在事務外）
+        try:
+            log_user_activity(
+                request.user,
+                'upload',
+                f'上傳原料倉管理檔案: {uploaded_file.name}',
+                request=request,
+                details={'records_count': len(created_records)}
+            )
+        except Exception as e:
+            print(f"記錄用戶活動失敗: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'檔案上傳成功！共處理了 {len(created_records)} 筆記錄',
+            'records_count': len(created_records)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'上傳過程中發生錯誤: {str(e)}'
+        })
+
+
+@require_raw_material_permission('view')
+def get_raw_material_upload_records(request):
+    """獲取原料倉上傳記錄列表（用於AJAX刷新）"""
+    try:
+        # 獲取所有原料倉上傳記錄
+        recent_uploads = FileUploadRecord.objects.filter(
+            file_type='raw_material'
+        ).order_by('-upload_time')
+        
+        upload_data = []
+        for upload in recent_uploads:
+            upload_data.append({
+                'id': str(upload.id),
+                'file_name': upload.file_name,
+                'file_size': upload.file_size,
+                'file_hash': upload.file_hash,
+                'upload_time': upload.upload_time.strftime('%Y-%m-%d %H:%M'),
+                'uploaded_by': upload.uploaded_by.username if upload.uploaded_by else '未知',
+                'records_count': upload.records_count or 0,
+                'status': upload.status,
+                'status_display': upload.get_status_display(),
+                'error_message': upload.error_message,
+                'can_delete': upload.uploaded_by == request.user or request.user.is_superuser
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'uploads': upload_data,
+            'total_count': len(upload_data)
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'獲取上傳記錄時發生錯誤: {str(e)}'
+        }, status=500)
+
+
+@require_raw_material_permission('delete')
+@require_http_methods(["POST"])
+def delete_raw_material_upload_record(request, upload_id):
+    """刪除原料倉上傳記錄"""
+    try:
+        upload_record = FileUploadRecord.objects.get(id=upload_id, file_type='raw_material')
+        
+        # 檢查權限
+        if upload_record.uploaded_by != request.user and not request.user.is_superuser:
+            return JsonResponse({
+                'success': False,
+                'message': '您沒有權限刪除此上傳記錄'
+            }, status=403)
+        
+        # 保存上傳記錄資訊（在刪除前）
+        file_name = upload_record.file_name
+        upload_id_str = str(upload_record.id)
+        
+        with transaction.atomic():
+            # 刪除相關的原料倉記錄
+            relations = UploadRecordRelation.objects.filter(upload_record=upload_record)
+            deleted_records = 0
+            
+            for relation in relations:
+                try:
+                    if relation.content_type == 'raw_material':
+                        record = RawMaterialWarehouseRecord.objects.get(id=relation.object_id)
+                        record.delete()
+                        deleted_records += 1
+                except RawMaterialWarehouseRecord.DoesNotExist:
+                    pass
+            
+            # 刪除關聯記錄
+            relations.delete()
+            
+            # 刪除上傳記錄
+            upload_record.delete()
+        
+        # 記錄活動（在事務外）
+        try:
+            log_user_activity(
+                request.user,
+                'delete_upload_record',
+                f'刪除原料倉上傳記錄: {file_name}',
+                request=request,
+                details={
+                    'upload_id': upload_id_str,
+                    'deleted_records': deleted_records
+                }
+            )
+        except Exception as e:
+            print(f"記錄刪除活動失敗: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'成功刪除上傳記錄，同時刪除了 {deleted_records} 筆相關記錄'
+        })
+            
+    except FileUploadRecord.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': '找不到指定的上傳記錄'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'刪除過程中發生錯誤: {str(e)}'
+        }, status=500)

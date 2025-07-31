@@ -474,14 +474,6 @@
                                 </span>
                                 <br>
                                 <div class="btn-group-vertical btn-group-sm">
-                                    <a href="/admin/app/fileuploadrecord/${upload.id}/change/" target="_blank" class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-eye"></i> 詳情
-                                    </a>
-                                    ${upload.status === 'success' && upload.records_count > 0 ? `
-                                        <a href="/admin/app/greenbeaninboundrecord/?upload_record=${upload.id}" target="_blank" class="btn btn-outline-success btn-sm">
-                                            <i class="fas fa-list"></i> 記錄
-                                        </a>
-                                    ` : ''}
                                     ${upload.can_delete ? `
                                         <button onclick="deleteUploadRecord('${upload.id}')" class="btn btn-outline-danger btn-sm">
                                             <i class="fas fa-trash"></i> 刪除

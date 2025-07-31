@@ -182,9 +182,10 @@ USE_TZ = False  # 為方便顯示日期時間，且網站僅使用於單一時�
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = (
     os.path.join(BASE_DIR, 'resources'),
+    os.path.join(BASE_DIR, 'static'),  # 添加 static 目錄
 )
 
 # Default primary key field type
@@ -273,6 +274,7 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880
 
 SIMPLEUI_CONFIG = {
     'system_keep': False,  # 隱藏系統預設，使用自定義分類
+    'language': 'zh-hans',  # 設定語言為中文，避免載入英文語言檔案
     'menus': [
         {
             'name': 'ERP 企業資源規劃',
@@ -351,6 +353,9 @@ SIMPLEUI_HOME_ACTION = True
 SIMPLEUI_DEFAULT = False  # 隱藏預設項目
 SIMPLEUI_LOGOUT = False   # 隱藏登出按鈕
 SIMPLEUI_LOGIN_LOGO = '/static/admin/simpleui-x/img/logo.png'
+SIMPLEUI_LANGUAGE = 'zh-hans'  # 明確設定語言
+SIMPLEUI_USE_ICON = True  # 使用圖標
+SIMPLEUI_STATIC_OFFLINE = True  # 離線靜態檔案
 
 SIMPLEUI_HOME_QUICK = [
     {

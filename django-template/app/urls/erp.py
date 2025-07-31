@@ -19,7 +19,11 @@ from app.views.erp_views import (
     delete_upload_record,
     get_upload_records,
     activity_log_view,
-    add_activity_record
+    add_activity_record,
+    raw_material_upload_page,
+    raw_material_upload_file,
+    get_raw_material_upload_records,
+    delete_raw_material_upload_record
 )
 from app.views.permission_views import permissions_redirect_view
 
@@ -51,6 +55,13 @@ urlpatterns = [
     path('green-bean-records/batch-delete/', batch_delete_green_bean_records, name='batch_delete_green_bean_records'),
     path('green-bean-records/upload/delete/<uuid:upload_id>/', delete_upload_record, name='delete_upload_record'),
     path('green-bean-records/uploads/', get_upload_records, name='get_upload_records'),
+    
+    # 原料倉管理頁面
+    path('raw-material-records/upload/', raw_material_upload_page, name='raw_material_upload_page'),
+    path('raw-material-records/upload-file/', raw_material_upload_file, name='raw_material_upload_file'),
+    path('raw-material-records/uploads/', get_raw_material_upload_records, name='get_raw_material_upload_records'),
+    path('raw-material-records/upload/delete/<uuid:upload_id>/', delete_raw_material_upload_record, name='delete_raw_material_upload_record'),
+    
     path('activity-log/', activity_log_view, name='activity_log'),
     path('activity-log/add/', add_activity_record, name='add_activity_record'),
 ]

@@ -1,0 +1,76 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+.object-tools {
+    margin-bottom: 10px;
+}
+
+.object-tools .addlink {
+    display: none !important; /* 隱藏預設新增按鈕 */
+}
+
+/* 調整搜尋表單樣式 */
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 上傳按鈕樣式統一 */
+.upload-btn {
+    background: #5b80b2;
+    background-image: linear-gradient(to bottom, #5b80b2, #4a6c9b);
+    border: 1px solid #4a6c9b;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 11px;
+    padding: 8px 10px;
+    text-align: center;
+    text-decoration: none;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    vertical-align: middle;
+    white-space: nowrap;
+    margin: 0;
+}
+
+.upload-btn:hover,
+.upload-btn:focus {
+    background: #4a6c9b;
+    background-image: linear-gradient(to bottom, #4a6c9b, #3d5983);
+    border-color: #3d5983;
+    color: #fff;
+    text-decoration: none;
+}
+
+.upload-btn i {
+    margin-right: 4px;
+    font-size: 11px;
+}
+</style>
+{% endblock %}
+
+{% block search %}
+{{ block.super }}
+{% endblock %}
+
+{% block object-tools %}
+<ul class="object-tools">
+    {{ block.super }}
+    <li>
+        <a href="/erp/raw-material-records/upload/" class="upload-btn">
+            <i class="fas fa-upload"></i> 上傳檔案
+        </a>
+    </li>
+</ul>
+{% endblock %}
+
+{% block extrajs %}
+{{ block.super }}
+{% endblock %} 

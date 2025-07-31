@@ -156,13 +156,12 @@ class RawMaterialWarehouseRecord(models.Model):
     outgoing_stock = models.DecimalField('領用', max_digits=10, decimal_places=2, null=True, blank=True)
     current_inventory = models.DecimalField('當前庫存', max_digits=10, decimal_places=2, null=True, blank=True)
     
-    # 待處理數量
-    pending_processing = models.DecimalField('待處理', max_digits=10, decimal_places=2, null=True, blank=True)
-    opened_quality_external_remaining = models.DecimalField('開袋+品管+外賣剩下', max_digits=10, decimal_places=2, null=True, blank=True)
-    external_sales = models.DecimalField('外賣', max_digits=10, decimal_places=2, null=True, blank=True)
-    
     # 時間記錄
     record_date = models.DateField('記錄日期', null=True, blank=True)
+    
+    # 動態欄位資料（儲存所有日期相關欄位和其他動態欄位）
+    dynamic_fields = models.JSONField('動態欄位資料', default=dict, blank=True, help_text='儲存所有動態欄位，如日期_入庫、日期_領用等')
+    
     created_at = models.DateTimeField('建立時間', auto_now_add=True)
     updated_at = models.DateTimeField('更新時間', auto_now=True)
 
