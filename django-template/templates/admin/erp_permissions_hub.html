@@ -6,7 +6,7 @@
 {% block breadcrumbs %}
 <div class="breadcrumbs">
 <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
-&rsaquo; <a href="#/admin/erp/">ERP</a>
+&rsaquo; <a href="/admin/erp/">ERP</a>
 &rsaquo; {{ title }}
 </div>
 {% endblock %}
@@ -218,8 +218,8 @@ function deleteGroup(groupId, groupName) {
         <!-- 快速操作區 -->
         <div class="quick-actions">
             <button onclick="showCreateGroupForm()" class="button default large">➕ 創建新群組</button>
-            <a href="#/admin/auth/group/" class="button large">📋 查看所有群組</a>
-            <a href="#/admin/erp/create-sample-groups/" class="button large">⚡ 創建示範群組</a>
+            <a href="/admin/auth/group/" class="button large">📋 查看所有群組</a>
+            <a href="/admin/erp/create-sample-groups/" class="button large">⚡ 創建示範群組</a>
         </div>
     </div>
 
@@ -258,8 +258,8 @@ function deleteGroup(groupId, groupName) {
                 </div>
                 
                 <div class="group-actions">
-                    <a href="#/admin/auth/group/{{ group.pk }}/change/" class="button edit-btn" title="完整編輯群組和權限">✏️ 完整編輯</a>
-                    <a href="#/admin/erp/group-edit/{{ group.pk }}/" class="button quick-edit-btn" title="快速編輯群組權限">⚡ 快速編輯</a>
+                    <a href="/admin/auth/group/{{ group.pk }}/change/" class="button edit-btn" title="完整編輯群組和權限">✏️ 完整編輯</a>
+                    <a href="/admin/erp/group-edit/{{ group.pk }}/" class="button quick-edit-btn" title="快速編輯群組權限">⚡ 快速編輯</a>
                     <button onclick="showPermissions({{ group.pk }})" class="button info-btn" title="顯示/隱藏群組權限">👁️ 查看權限</button>
                     {% if group.user_set.count == 0 %}
                     <button onclick="deleteGroup({{ group.pk }}, '{{ group.name|escapejs }}')" class="button delete-btn" title="刪除群組(僅限無使用者的群組)">🗑️ 刪除</button>
@@ -299,8 +299,8 @@ function deleteGroup(groupId, groupName) {
         <h2>👤 使用者權限管理</h2>
         <div class="users-summary">
             <p>為使用者分配群組，或檢視現有的權限分配：</p>
-            <a href="#/admin/app/user/" class="button large">管理使用者權限</a>
-            <a href="#/admin/auth/permission/" class="button">查看所有系統權限</a>
+            <a href="/admin/app/user/" class="button large">管理使用者權限</a>
+            <a href="/admin/auth/permission/" class="button">查看所有系統權限</a>
         </div>
     </div>
 </div>

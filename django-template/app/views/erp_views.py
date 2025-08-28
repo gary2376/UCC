@@ -62,22 +62,71 @@ class ERPDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         stats = {}
         
         if user_permissions['green_bean']:
+            # 今日入庫記錄數量
+            today = datetime.now().date()
+            today_records = GreenBeanInboundRecord.objects.filter(
+                record_time__date=today
+            ).count()
+            
+            # 總生豆入庫量（所有時間的總重量）
+            total_weight = GreenBeanInboundRecord.objects.filter(
+                measured_weight_kg__isnull=False
+            ).aggregate(total=Sum('measured_weight_kg'))['total'] or 0
+            
+            # 本週總重量
+            week_start = today - timedelta(days=today.weekday())
+            week_weight = GreenBeanInboundRecord.objects.filter(
+                record_time__date__gte=week_start,
+                measured_weight_kg__isnull=False
+            ).aggregate(total=Sum('measured_weight_kg'))['total'] or 0
+            
+            # 異常記錄數量
+            abnormal_count = GreenBeanInboundRecord.objects.filter(is_abnormal=True).count()
+            
+            # 本月平均重量
+            current_month_avg = GreenBeanInboundRecord.objects.filter(
+                record_time__month=datetime.now().month,
+                record_time__year=datetime.now().year,
+                measured_weight_kg__isnull=False
+            ).aggregate(avg=Avg('measured_weight_kg'))['avg'] or 0
+            
             stats.update({
                 'total_green_bean_records': GreenBeanInboundRecord.objects.count(),
-                'recent_abnormal_records': GreenBeanInboundRecord.objects.filter(is_abnormal=True).count(),
-                'current_month_green_bean_records': GreenBeanInboundRecord.objects.filter(
+                'recent_abnormal_records': abnormal_count,
+                'current_month_records': GreenBeanInboundRecord.objects.filter(
                     record_time__month=datetime.now().month,
                     record_time__year=datetime.now().year
-                ).count()
+                ).count(),
+                'today_green_bean_records': today_records,
+                'total_green_bean_weight': round(float(total_weight), 2),
+                'week_total_weight': round(float(week_weight), 2),
+                'month_avg_weight': round(float(current_month_avg), 2)
             })
         
         if user_permissions['raw_material']:
+            # 低庫存商品數量
+            low_inventory_threshold = 100
+            low_inventory_count = RawMaterialWarehouseRecord.objects.filter(
+                current_inventory__lt=low_inventory_threshold,
+                current_inventory__gt=0
+            ).count()
+            
+            # 總庫存價值（假設有單價欄位，這裡用庫存數量代替）
+            total_inventory = RawMaterialWarehouseRecord.objects.aggregate(
+                total=Sum('current_inventory')
+            )['total'] or 0
+            
+            # 本月出入庫次數
+            current_month_transactions = RawMaterialWarehouseRecord.objects.filter(
+                record_time__month=datetime.now().month,
+                record_time__year=datetime.now().year
+            ).count()
+            
             stats.update({
                 'total_raw_material_records': RawMaterialWarehouseRecord.objects.count(),
-                'current_month_raw_material_records': RawMaterialWarehouseRecord.objects.filter(
-                    record_time__month=datetime.now().month,
-                    record_time__year=datetime.now().year
-                ).count()
+                'current_month_raw_material_records': current_month_transactions,
+                'low_inventory_count': low_inventory_count,
+                'total_inventory_amount': total_inventory
             })
         
         # 根據權限獲取最近的記錄
@@ -89,7 +138,7 @@ class ERPDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
             recent_green_bean_records = GreenBeanInboundRecord.objects.order_by('-record_time')[:10]
         
         if user_permissions['raw_material']:
-            recent_raw_material_records = RawMaterialWarehouseRecord.objects.order_by('-record_time')[:10]
+            recent_raw_material_records = RawMaterialWarehouseRecord.objects.order_by('-created_at')[:10]
             # 庫存警示（低庫存商品）
             low_inventory_threshold = 100
             low_inventory_items = RawMaterialWarehouseRecord.objects.filter(
@@ -97,11 +146,17 @@ class ERPDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
                 current_inventory__gt=0
             ).order_by('current_inventory')[:10]
         
+        # 獲取圖表數據
+        from app.utils.activity_logger import get_weekly_charts_data
+        import json
+        weekly_charts_data = json.dumps(get_weekly_charts_data())
+        
         context = {
             'stats': stats,
             'recent_green_bean_records': recent_green_bean_records,
             'recent_raw_material_records': recent_raw_material_records,
             'low_inventory_items': low_inventory_items,
+            'weekly_charts_data': weekly_charts_data,
             'user_permissions': user_permissions,
         }
         
@@ -136,18 +191,71 @@ class ERPCleanDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         stats = {}
 
         if user_permissions['green_bean']:
+            # 今日入庫記錄數量
+            today = datetime.now().date()
+            today_records = GreenBeanInboundRecord.objects.filter(
+                record_time__date=today
+            ).count()
+            
+            # 總生豆入庫量（所有時間的總重量）
+            total_weight = GreenBeanInboundRecord.objects.filter(
+                measured_weight_kg__isnull=False
+            ).aggregate(total=Sum('measured_weight_kg'))['total'] or 0
+            
+            # 本週總重量
+            week_start = today - timedelta(days=today.weekday())
+            week_weight = GreenBeanInboundRecord.objects.filter(
+                record_time__date__gte=week_start,
+                measured_weight_kg__isnull=False
+            ).aggregate(total=Sum('measured_weight_kg'))['total'] or 0
+            
+            # 異常記錄數量
+            abnormal_count = GreenBeanInboundRecord.objects.filter(is_abnormal=True).count()
+            
+            # 本月平均重量
+            current_month_avg = GreenBeanInboundRecord.objects.filter(
+                record_time__month=datetime.now().month,
+                record_time__year=datetime.now().year,
+                measured_weight_kg__isnull=False
+            ).aggregate(avg=Avg('measured_weight_kg'))['avg'] or 0
+            
             stats.update({
                 'total_green_bean_records': GreenBeanInboundRecord.objects.count(),
-                'recent_abnormal_records': GreenBeanInboundRecord.objects.filter(is_abnormal=True).count(),
+                'recent_abnormal_records': abnormal_count,
                 'current_month_records': GreenBeanInboundRecord.objects.filter(
                     record_time__month=datetime.now().month,
                     record_time__year=datetime.now().year
-                ).count()
+                ).count(),
+                'today_green_bean_records': today_records,
+                'total_green_bean_weight': round(float(total_weight), 2),
+                'week_total_weight': round(float(week_weight), 2),
+                'month_avg_weight': round(float(current_month_avg), 2)
             })
 
         if user_permissions['raw_material']:
+            # 低庫存商品數量
+            low_inventory_threshold = 100
+            low_inventory_count = RawMaterialWarehouseRecord.objects.filter(
+                current_inventory__lt=low_inventory_threshold,
+                current_inventory__gt=0
+            ).count()
+            
+            # 總庫存數量
+            total_inventory = RawMaterialWarehouseRecord.objects.aggregate(
+                total=Sum('current_inventory')
+            )['total'] or 0
+            
+            # 本月出入庫次數
+            current_month_transactions = RawMaterialWarehouseRecord.objects.filter(
+                created_at__month=datetime.now().month,
+                created_at__year=datetime.now().year
+            ).count()
+            
             stats.update({
                 'total_raw_material_records': RawMaterialWarehouseRecord.objects.count(),
+                'current_month_raw_material_records': current_month_transactions,
+                'low_inventory_count': low_inventory_count,
+                'total_inventory_amount': total_inventory
             })
 
         # 根據權限獲取記錄
@@ -169,8 +277,10 @@ class ERPCleanDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
         recent_activities = get_important_user_activities(limit=30)
 
         # 獲取本週記錄統計
-        from app.utils.activity_logger import get_weekly_records_comparison
+        from app.utils.activity_logger import get_weekly_records_comparison, get_weekly_charts_data
+        import json
         weekly_comparison = get_weekly_records_comparison()
+        weekly_charts_data = json.dumps(get_weekly_charts_data())
 
         context = {
             'stats': stats,
@@ -178,6 +288,7 @@ class ERPCleanDashboardView(LoginRequiredMixin, PermissionRequiredMixin, View):
             'low_inventory_items': low_inventory_items,
             'recent_activities': recent_activities,
             'weekly_comparison': weekly_comparison,
+            'weekly_charts_data': weekly_charts_data,
             'user_permissions': user_permissions,
         }
 

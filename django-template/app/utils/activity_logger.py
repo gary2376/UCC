@@ -180,6 +180,73 @@ def get_important_user_activities(user=None, limit=50):
     return queryset.order_by('-created_at')[:limit]
 
 
+def get_weekly_charts_data():
+    """
+    獲取生豆入庫和原料倉管理的每日統計數據，用於繪製折線圖
+    顯示過去14天的數據，包含今天到目前為止的數據
+    
+    Returns:
+        dict: 包含兩個系列數據的字典
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    from app.models import GreenBeanInboundRecord, RawMaterialWarehouseRecord
+    
+    now = timezone.now()
+    
+    # 計算過去14天的數據（包含今天）
+    days_data = []
+    green_bean_data = []
+    raw_material_data = []
+    
+    for i in range(13, -1, -1):  # 從13天前到今天
+        # 計算該天的開始時間
+        day_start = now - timedelta(days=i)
+        day_start = day_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        
+        # 計算該天的結束時間
+        if i == 0:  # 今天：結束時間是現在
+            day_end = now
+            day_label = day_start.strftime('%m/%d') + '(今日)'
+        else:  # 過去的天：結束時間是當天晚上11:59:59
+            day_end = day_start + timedelta(hours=23, minutes=59, seconds=59)
+            day_label = day_start.strftime('%m/%d')
+        
+        days_data.append(day_label)
+        
+        # 計算生豆入庫記錄數 - 優先使用 created_at，因為 record_time 可能是歷史日期
+        green_bean_count = 0
+        try:
+            # 使用 created_at（記錄創建時間）而不是 record_time（業務記錄時間）
+            green_bean_count = GreenBeanInboundRecord.objects.filter(
+                created_at__gte=day_start,
+                created_at__lte=day_end
+            ).count()
+            
+        except Exception as e:
+            green_bean_count = 0
+            
+        green_bean_data.append(green_bean_count)
+        
+        # 計算原料倉記錄數
+        raw_material_count = 0
+        try:
+            raw_material_count = RawMaterialWarehouseRecord.objects.filter(
+                created_at__gte=day_start,
+                created_at__lte=day_end
+            ).count()
+        except Exception as e:
+            raw_material_count = 0
+            
+        raw_material_data.append(raw_material_count)
+    
+    return {
+        'weeks': days_data,  # 保持原來的鍵名以免破壞前端程式碼
+        'green_bean_data': green_bean_data,
+        'raw_material_data': raw_material_data
+    }
+
+
 def get_weekly_records_comparison():
     """
     獲取本週記錄數與上個月週均記錄數的比較

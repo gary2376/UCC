@@ -55,13 +55,11 @@
 <div class="erp-permissions-banner">
     <h3>⚡ 系統權限總覽</h3>
     <p>您目前在 Django 標準權限列表頁面。如需進行群組管理和權限分配，建議使用我們的 ERP 權限管理中心。</p>
-    <a href="#/admin/erp/permissions/" class="erp-btn">
-        <i class="fas fa-shield-alt"></i>
-        前往 ERP 權限管理中心
+        <a href="/admin/erp/permissions/" class="erp-btn">
+        <i class="fas fa-shield-alt"></i> ERP 權限管理中心
     </a>
-    <a href="#/admin/auth/group/" class="erp-btn" style="margin-left: 10px;">
-        <i class="fas fa-users"></i>
-        群組管理
+    <a href="/admin/auth/group/" class="erp-btn" style="margin-left: 10px;">
+        <i class="fas fa-users"></i> 查看群組
     </a>
 </div>
 {{ block.super }}
@@ -72,7 +70,7 @@
     <h4 style="margin: 0 0 10px 0; color: #856404;">⚠️ 重要提醒</h4>
     <ul style="margin: 0; padding-left: 20px; color: #856404;">
         <li>此頁面僅供查看系統中所有可用的權限</li>
-        <li>要創建群組或分配權限給使用者，請前往 <a href="#/admin/erp/permissions/" style="color: #856404; font-weight: bold;">ERP 權限管理中心</a></li>
+        <li>要創建群組或分配權限給使用者，請前往 <a href="/admin/erp/permissions/" style="color: #856404; font-weight: bold;">ERP 權限管理中心</a></li>
         <li>ERP 中心提供圖形化界面，讓權限管理更加直觀和簡單</li>
     </ul>
 </div>

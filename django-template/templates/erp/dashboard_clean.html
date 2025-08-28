@@ -165,44 +165,45 @@
     <div class="container">
         <!-- 統計卡片 -->
         <div class="row">
+            <!-- 生豆相關卡片 -->
             {% if user_permissions.green_bean %}
             <div class="col-md-3">
                 <div class="dashboard-card">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5>生豆入庫記錄</h5>
-                            <div class="stats-number">{{ stats.total_green_bean_records|default:0 }}</div>
-                            <small>總記錄數</small>
+                            <h5>生豆入庫總量</h5>
+                            <div class="stats-number">{{ stats.total_green_bean_weight|floatformat:0|default:0 }}</div>
+                            <small>公斤</small>
                         </div>
                         <i class="fas fa-coffee fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
-            {% endif %}
-            {% if user_permissions.raw_material %}
             <div class="col-md-3">
                 <div class="dashboard-card success">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5>原料倉記錄</h5>
-                            <div class="stats-number">{{ stats.total_raw_material_records|default:0 }}</div>
-                            <small>庫存商品數</small>
+                            <h5>異常記錄</h5>
+                            <div class="stats-number">{{ stats.recent_abnormal_records|default:0 }}</div>
+                            <small>筆數</small>
                         </div>
-                        <i class="fas fa-boxes fa-4x stats-icon"></i>
+                        <i class="fas fa-exclamation-triangle fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
             {% endif %}
-            {% if user_permissions.green_bean %}
+            
+            <!-- 原料倉相關卡片 -->
+            {% if user_permissions.raw_material %}
             <div class="col-md-3">
                 <div class="dashboard-card warning">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5>異常記錄</h5>
-                            <div class="stats-number">{{ stats.recent_abnormal_records|default:0 }}</div>
-                            <small>需要關注</small>
+                            <h5>原料庫存總量</h5>
+                            <div class="stats-number">{{ stats.total_inventory_amount|floatformat:0|default:0 }}</div>
+                            <small>數量單位</small>
                         </div>
-                        <i class="fas fa-exclamation-triangle fa-4x stats-icon"></i>
+                        <i class="fas fa-warehouse fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
@@ -210,70 +211,48 @@
                 <div class="dashboard-card info">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h5>本月記錄</h5>
-                            <div class="stats-number">{{ stats.current_month_records|default:0 }}</div>
-                            <small>當月新增</small>
+                            <h5>低庫存警示</h5>
+                            <div class="stats-number">{{ stats.low_inventory_count|default:0 }}</div>
+                            <small>需要補貨</small>
                         </div>
-                        <i class="fas fa-calendar-month fa-4x stats-icon"></i>
+                        <i class="fas fa-exclamation-circle fa-4x stats-icon"></i>
                     </div>
                 </div>
             </div>
             {% endif %}
         </div>
 
-        <!-- 本週記錄統計卡片 -->
+        <!-- 記錄數量趨勢圖 -->
         <div class="row">
-            <div class="col-md-12">
+            <!-- 生豆入庫記錄趨勢 -->
+            {% if user_permissions.green_bean %}
+            <div class="col-md-6">
                 <div class="content-card">
                     <h4 class="mb-4">
-                        <i class="fas fa-chart-line text-primary me-2"></i> 
-                        本週記錄統計
+                        <i class="fas fa-chart-line text-success me-2"></i> 
+                        生豆入庫記錄趨勢
                     </h4>
-                    <div class="row">
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <h2 class="text-primary mb-0">{{ weekly_comparison.this_week_count }}</h2>
-                                <small class="text-muted">本週記錄數</small>
-                                <div class="text-muted small">{{ weekly_comparison.week_start }} 起</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <h2 class="text-secondary mb-0">{{ weekly_comparison.last_month_weekly_avg }}</h2>
-                                <small class="text-muted">{{ weekly_comparison.comparison_month }}週均</small>
-                                <div class="text-muted small">每週平均記錄數</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                {% if weekly_comparison.trend == 'up' %}
-                                    <h2 class="text-success mb-0">+{{ weekly_comparison.percentage_change }}%</h2>
-                                    <small class="text-success">{{ weekly_comparison.trend_text }}</small>
-                                {% elif weekly_comparison.trend == 'down' %}
-                                    <h2 class="text-danger mb-0">{{ weekly_comparison.percentage_change }}%</h2>
-                                    <small class="text-danger">{{ weekly_comparison.trend_text }}</small>
-                                {% else %}
-                                    <h2 class="text-warning mb-0">{{ weekly_comparison.percentage_change }}%</h2>
-                                    <small class="text-warning">{{ weekly_comparison.trend_text }}</small>
-                                {% endif %}
-                                <div class="text-muted small">相對變化</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                {% if weekly_comparison.trend == 'up' %}
-                                    <i class="fas fa-arrow-up fa-3x text-success"></i>
-                                {% elif weekly_comparison.trend == 'down' %}
-                                    <i class="fas fa-arrow-down fa-3x text-danger"></i>
-                                {% else %}
-                                    <i class="fas fa-minus fa-3x text-warning"></i>
-                                {% endif %}
-                                <div class="text-muted small mt-2">趨勢指標</div>
-                            </div>
-                        </div>
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="greenBeanChart"></canvas>
                     </div>
                 </div>
             </div>
+            {% endif %}
+            
+            <!-- 原料倉記錄趨勢 -->
+            {% if user_permissions.raw_material %}
+            <div class="col-md-6">
+                <div class="content-card">
+                    <h4 class="mb-4">
+                        <i class="fas fa-chart-line text-primary me-2"></i> 
+                        原料倉管理記錄趨勢
+                    </h4>
+                    <div class="chart-container" style="position: relative; height: 300px;">
+                        <canvas id="rawMaterialChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         {% if user_permissions.green_bean %}
@@ -289,12 +268,15 @@
                         <table class="table dashboard-table table-hover">
                             <thead class="table-primary">
                                 <tr>
-                                    <th style="width: 15%;">記錄時間</th>
-                                    <th style="width: 20%;">單號</th>
-                                    <th style="width: 30%;">生豆名稱</th>
-                                    <th style="width: 15%;">重量(kg)</th>
-                                    <th style="width: 10%;">狀態</th>
-                                    <th style="width: 10%;">操作</th>
+                                    <th style="width: 12%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">記錄時間</th>
+                                    <th style="width: 17%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">單號</th>
+                                    <th style="width: 13%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">生豆料號</th>
+                                    <th style="width: 22%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">生豆名稱</th>
+                                    <th style="width: 13%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">生豆批號</th>
+                                    <th style="width: 12%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">量測重量(kg)</th>
+                                    <th style="width: 9%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">一袋重量(kg)</th>
+                                    <th style="width: 12%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">入庫筒倉</th>
+                                    <th style="width: 5%; writing-mode: horizontal-tb; text-orientation: mixed; white-space: nowrap;">狀態</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -307,15 +289,16 @@
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="fw-bold text-primary">{{ record.order_number|truncatechars:20 }}</span>
+                                        <span class="fw-bold text-primary">{{ record.order_number|truncatechars:15 }}</span>
                                     </td>
                                     <td>
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-bold">{{ record.green_bean_name|default:"-"|truncatechars:25 }}</span>
-                                            {% if record.green_bean_code %}
-                                                <small class="text-muted">{{ record.green_bean_code }}</small>
-                                            {% endif %}
-                                        </div>
+                                        <span class="text-muted">{{ record.green_bean_code|default:"-" }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">{{ record.green_bean_name|default:"-"|truncatechars:25 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ record.green_bean_batch_number|default:"-" }}</span>
                                     </td>
                                     <td>
                                         {% if record.measured_weight_kg %}
@@ -325,21 +308,26 @@
                                         {% endif %}
                                     </td>
                                     <td>
+                                        {% if record.bag_weight_kg %}
+                                            <span class="text-muted">{{ record.bag_weight_kg }}</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ record.green_bean_storage_silo|default:"-" }}</span>
+                                    </td>
+                                    <td>
                                         {% if record.is_abnormal %}
                                             <span class="badge bg-danger">異常</span>
                                         {% else %}
                                             <span class="badge bg-success">正常</span>
                                         {% endif %}
                                     </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="viewRecord('{{ record.id }}')">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                    </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">
+                                    <td colspan="9" class="text-center text-muted py-4">
                                         <i class="fas fa-inbox fa-2x mb-2"></i>
                                         <div>暫無記錄</div>
                                     </td>
@@ -354,13 +342,15 @@
         {% endif %}
 
         <div class="row">
-            <!-- 用戶活動記錄 -->
+            <!-- 用戶活動記錄 - 只有有權限的用戶才能看到 -->
+            {% if user_permissions.user_activity %}
             <div class="col-md-8">
                 <div class="content-card">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h4>
                             <i class="fas fa-user-clock text-success me-2"></i> 
                             用戶活動記錄
+                            <small class="text-muted">(僅限授權用戶)</small>
                         </h4>
                     </div>
                     <div class="activity-scroll">
@@ -450,6 +440,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
 
             {% if user_permissions.raw_material %}
             <!-- 庫存警示 -->
@@ -535,7 +526,196 @@
             var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+            
+            // 初始化圖表
+            initializeCharts();
         });
+        
+        // 初始化圖表
+        function initializeCharts() {
+            // 從後端獲取圖表數據
+            const chartsData = JSON.parse('{{ weekly_charts_data|escapejs }}');
+            
+            // 生豆入庫記錄趨勢圖
+            {% if user_permissions.green_bean %}
+            const greenBeanCtx = document.getElementById('greenBeanChart');
+            if (greenBeanCtx) {
+                new Chart(greenBeanCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartsData.weeks,
+                        datasets: [{
+                            label: '生豆入庫記錄數',
+                            data: chartsData.green_bean_data,
+                            borderColor: '#28a745',
+                            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#28a745',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#28a745',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '日期',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            y: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '記錄數量',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        },
+                        elements: {
+                            point: {
+                                hoverBackgroundColor: '#ffffff'
+                            }
+                        }
+                    }
+                });
+            }
+            {% endif %}
+            
+            // 原料倉記錄趨勢圖
+            {% if user_permissions.raw_material %}
+            const rawMaterialCtx = document.getElementById('rawMaterialChart');
+            if (rawMaterialCtx) {
+                new Chart(rawMaterialCtx, {
+                    type: 'line',
+                    data: {
+                        labels: chartsData.weeks,
+                        datasets: [{
+                            label: '原料倉記錄數',
+                            data: chartsData.raw_material_data,
+                            borderColor: '#007bff',
+                            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#007bff',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#007bff',
+                                borderWidth: 1
+                            }
+                        },
+                        scales: {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '日期',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                }
+                            },
+                            y: {
+                                display: true,
+                                title: {
+                                    display: true,
+                                    text: '記錄數量',
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                },
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
+                                },
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        },
+                        elements: {
+                            point: {
+                                hoverBackgroundColor: '#ffffff'
+                            }
+                        }
+                    }
+                });
+            }
+            {% endif %}
+        }
     </script>
 </body>
 </html>

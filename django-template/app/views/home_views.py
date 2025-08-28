@@ -10,8 +10,9 @@ def home_view(request):
     """
     根路徑重定向 - 直接重定向到Django Admin
     """
-    # 直接重定向到Django Admin
-    return redirect('/admin/')
+    # 直接重定向到Django Admin，確保URL統一
+    from django.http import HttpResponseRedirect
+    return HttpResponseRedirect('/admin/')
 
 @require_http_methods(["GET"])
 def health_check(request):

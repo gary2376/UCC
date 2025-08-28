@@ -43,6 +43,16 @@ def check_raw_material_permission(user):
     return has_model_permission(user, 'app', 'rawmaterialwarehouserecord', 'view')
 
 
+def check_user_activity_permission(user):
+    """檢查使用者是否有查看用戶活動記錄的權限"""
+    # 超級使用者可以查看
+    if user.is_superuser:
+        return True
+    
+    # 檢查是否有查看用戶活動記錄的特定權限
+    return has_model_permission(user, 'app', 'useractivitylog', 'view')
+
+
 def get_user_accessible_sections(user):
     """
     獲取使用者可存取的系統區塊
@@ -56,6 +66,7 @@ def get_user_accessible_sections(user):
             'raw_material': True,
             'dashboard': True,
             'admin': True,
+            'user_activity': True,
         }
     
     return {
@@ -63,6 +74,7 @@ def get_user_accessible_sections(user):
         'raw_material': check_raw_material_permission(user),
         'dashboard': (check_green_bean_permission(user) or check_raw_material_permission(user)),  # 有相關權限才能查看儀表板
         'admin': user.is_staff,  # 員工才能存取管理功能
+        'user_activity': check_user_activity_permission(user),  # 用戶活動記錄權限
     }
 
 
